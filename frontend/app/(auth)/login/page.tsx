@@ -1,0 +1,145 @@
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Leaf, LogIn } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { UserRole } from '@/lib/types/user';
+
+export default function LoginPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [role, setRole] = useState<UserRole>('farmer');
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    // Mock authentication
+    setTimeout(() => {
+      const user = {
+        id: '1',
+        email,
+        name: email.split('@')[0],
+        role,
+      };
+
+      localStorage.setItem('user', JSON.stringify(user));
+
+      // Redirect based on role
+      switch (role) {
+        case 'farmer':
+          router.push('/farmer/dashboard');
+          break;
+        case 'buyer':
+          router.push('/buyer/dashboard');
+          break;
+        case 'transporter':
+          router.push('/transporter/dashboard');
+          break;
+        case 'admin':
+          router.push('/admin/dashboard');
+          break;
+      }
+    }, 1000);
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="bg-white/80 backdrop-blur-md rounded-2xl shadow-xl border border-green-100 p-8"
+    >
+      <div className="flex flex-col items-center mb-8">
+        <div className="flex items-center justify-center w-16 h-16 bg-green-600 rounded-2xl mb-4">
+          <Leaf className="w-8 h-8 text-white" />
+        </div>
+        <h1 className="text-3xl font-bold text-slate-900 text-balance text-center">
+          Welcome to AgriConnect
+        </h1>
+        <p className="text-slate-600 mt-2 text-center">
+          AI-Powered Farmer-to-Market Platform
+        </p>
+      </div>
+
+      <form onSubmit={handleLogin} className="space-y-6">
+        <div className="space-y-2">
+          <Label htmlFor="role">I am a</Label>
+          <Select value={role} onValueChange={(value) => setRole(value as UserRole)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select your role" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="farmer">Farmer</SelectItem>
+              <SelectItem value="buyer">Buyer</SelectItem>
+              <SelectItem value="transporter">Transporter</SelectItem>
+              <SelectItem value="admin">Admin</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="your.email@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <Input
+            id="password"
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </div>
+
+        <Button
+          type="submit"
+          className="w-full bg-green-600 hover:bg-green-700 text-white rounded-xl shadow-md hover:shadow-lg transition-all"
+          disabled={loading}
+        >
+          {loading ? (
+            'Signing in...'
+          ) : (
+            <>
+              <LogIn className="w-4 h-4 mr-2" />
+              Sign In
+            </>
+          )}
+        </Button>
+      </form>
+
+      <div className="mt-6 text-center">
+        <p className="text-sm text-slate-600">
+          Don&apos;t have an account?{' '}
+          <Link href="/signup" className="text-green-600 hover:text-green-700 font-medium">
+            Sign up
+          </Link>
+        </p>
+      </div>
+    </motion.div>
+  );
+}
