@@ -5,21 +5,58 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { StatusBadge } from '@/components/shared/status-badge';
-import { Package, MapPin, Truck, Phone, Mail, Calendar } from 'lucide-react';
+import { TrackingStatusBar } from '@/components/tracking/TrackingStatusBar';
 import { mockOrders } from '@/lib/mock-data/orders';
-import { mockCrops } from '@/lib/mock-data/crops';
+import { mockCropListings } from '@/lib/mock-data/crops';
 import { mockFarmers } from '@/lib/mock-data/farmers';
+import TrackingStatusBar, { TrackingStatus } from '@/components/tracking/TrackingStatusBar';
 
 export default function MyOrdersPage() {
-  const buyerOrders = mockOrders.filter(o => o.buyerId === 'buyer-1');
+  const buyerOrders = mockOrders.filter(o => o.buyerId === 'b1');
+
+  // Mock tracking data for orders
+  const mockTrackingData: Record<string, { history: TrackingStatus[], transporter: any }> = {
+    'o1': {
+      history: [
+        {
+          id: 't1',
+          status: 'pickup_scheduled',
+          timestamp: '2024-02-17T08:00:00Z',
+          description: 'Pickup Scheduled',
+          updatedBy: 'system'
+        },
+        {
+          id: 't2',
+          status: 'picked_up',
+          timestamp: '2024-02-17T10:30:00Z',
+          location: 'Hisar Farm',
+          description: 'Picked Up',
+          updatedBy: 'transporter',
+          notes: 'Crop loaded successfully, quality verified'
+        },
+        {
+          id: 't3',
+          status: 'in_transit',
+          timestamp: '2024-02-17T11:00:00Z',
+          location: 'NH-44 Highway, approaching Delhi',
+          description: 'In Transit',
+          updatedBy: 'transporter'
+        }
+      ],
+      transporter: {
+        name: 'Vikram Yadav',
+        phone: '+91 9876543210',
+        vehicleNumber: 'HR-26-AB-1234'
+      }
+    }
+  };
   
   const activeOrders = buyerOrders.filter(o => ['pending', 'confirmed', 'in_transit'].includes(o.status));
   const completedOrders = buyerOrders.filter(o => ['delivered', 'completed'].includes(o.status));
   const cancelledOrders = buyerOrders.filter(o => o.status === 'cancelled');
 
   const renderOrderCard = (order: typeof mockOrders[0]) => {
-    const crop = mockCrops.find(c => c.id === order.cropId);
+    const crop = mockCropListings.find(c => c.id === order.cropId);
     const farmer = mockFarmers.find(f => f.id === order.farmerId);
     
     return (
@@ -119,6 +156,19 @@ export default function MyOrdersPage() {
               View Details
             </Button>
           </div>
+
+          {/* Tracking Status Bar for In-Transit Orders */}
+          {order.status === 'in_transit' && mockTrackingData[order.id] && (
+            <div className="mt-6">
+              <TrackingStatusBar
+                orderId={order.id}
+                currentStatus="in_transit"
+                trackingHistory={mockTrackingData[order.id].history}
+                userRole="buyer"
+                transporterInfo={mockTrackingData[order.id].transporter}
+              />
+            </div>
+          )}
         </div>
       </Card>
     );

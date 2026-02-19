@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { FileText, Calendar, User, MapPin, TrendingUp } from 'lucide-react';
+import Link from 'next/link';
 
 const mockContracts = [
   {
@@ -43,9 +44,11 @@ export default function ContractsPage() {
           <h1 className="text-3xl font-bold text-foreground">Contracts</h1>
           <p className="text-muted-foreground">Manage long-term supply agreements</p>
         </div>
-        <Button>
-          <FileText className="w-4 h-4 mr-2" />
-          New Contract
+        <Button asChild>
+          <Link href="/buyer/new-contract">
+            <FileText className="w-4 h-4 mr-2" />
+            New Contract
+          </Link>
         </Button>
       </div>
 
@@ -126,7 +129,9 @@ export default function ContractsPage() {
           <p className="text-sm text-muted-foreground mt-2 mb-4">
             Create contracts with farmers for guaranteed supply
           </p>
-          <Button>Create Contract</Button>
+          <Button asChild>
+            <Link href="/buyer/new-contract">Create Contract</Link>
+          </Button>
         </Card>
       )}
     </div>

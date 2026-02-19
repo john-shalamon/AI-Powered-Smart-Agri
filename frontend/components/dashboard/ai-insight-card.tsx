@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { AIInsight } from '@/lib/types/ai-insights';
+import Link from 'next/link';
 
 interface AIInsightCardProps {
   insight: AIInsight;
@@ -48,8 +49,10 @@ export function AIInsightCard({ insight }: AIInsightCardProps) {
         </div>
 
         {insight.actionButton && (
-          <Button className="w-full bg-green-600 hover:bg-green-700 text-white rounded-xl">
-            {insight.actionButton.label}
+          <Button asChild className="w-full bg-green-600 hover:bg-green-700 text-white rounded-xl">
+            <Link href={insight.actionButton.action}>
+              {insight.actionButton.label}
+            </Link>
           </Button>
         )}
       </div>

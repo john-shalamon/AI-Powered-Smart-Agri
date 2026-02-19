@@ -22,3 +22,13 @@ export async function getJobStatus(jobId: string) {
   }
   return res.json();
 }
+
+export async function getMarketPrices() {
+  const url = `${API_BASE}/api/ai/market-prices`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || 'Failed to fetch market prices');
+  }
+  return await res.json();
+}

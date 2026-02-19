@@ -8,13 +8,13 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { Search, Eye } from 'lucide-react';
-import { mockCrops } from '@/lib/mock-data/crops';
+import { mockCropListings } from '@/lib/mock-data/crops';
 import { mockOrders } from '@/lib/mock-data/orders';
 
 export default function CropsOrdersPage() {
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredCrops = mockCrops.filter(c => 
+  const filteredCrops = mockCropListings.filter(c => 
     c.cropName.toLowerCase().includes(searchQuery.toLowerCase())
   );
   const filteredOrders = mockOrders.filter(o => 
@@ -43,7 +43,7 @@ export default function CropsOrdersPage() {
       {/* Tabs */}
       <Tabs defaultValue="crops" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="crops">Crop Listings ({mockCrops.length})</TabsTrigger>
+          <TabsTrigger value="crops">Crop Listings ({mockCropListings.length})</TabsTrigger>
           <TabsTrigger value="orders">Orders ({mockOrders.length})</TabsTrigger>
         </TabsList>
 
@@ -115,7 +115,7 @@ export default function CropsOrdersPage() {
                 </thead>
                 <tbody>
                   {filteredOrders.map((order) => {
-                    const crop = mockCrops.find(c => c.id === order.cropId);
+                    const crop = mockCropListings.find(c => c.id === order.cropId);
                     return (
                       <tr key={order.id} className="border-b border-border hover:bg-secondary/30 transition-colors">
                         <td className="p-4">

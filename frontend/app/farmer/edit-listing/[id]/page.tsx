@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useRef } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import { PageTransition } from '@/components/animations/page-transition';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -26,9 +26,12 @@ interface UploadedImage {
   id: string;
 }
 
-export default function AddListingPage() {
+export default function EditListingPage() {
   const router = useRouter();
+  const params = useParams();
+  const listingId = params.id as string;
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [formData, setFormData] = useState({
@@ -43,6 +46,38 @@ export default function AddListingPage() {
     description: ''
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const listing = mockCropListings.find(l => l.id === listingId);
+    if (!listing) {
+      toast.error('Listing not found');
+      router.push('/farmer/my-listings');
+      return;
+    }
+
+    // Pre-fill form data
+    setFormData({
+      cropName: listing.cropName,
+      category: listing.category,
+      quantity: listing.quantity.toString(),
+      unit: listing.unit,
+      quality: listing.quality,
+      price: listing.pricePerUnit.toString(),
+      harvestDate: listing.harvestDate.toISOString().split('T')[0],
+      location: listing.location.address,
+      description: listing.description
+    });
+
+    // Load existing images
+    const existingImages: UploadedImage[] = listing.images.map((img, index) => ({
+      file: new File([], `existing-${index}`), // Placeholder file
+      preview: img,
+      id: `existing-${index}`
+    }));
+    setUploadedImages(existingImages);
+
+    setInitialLoading(false);
+  }, [listingId, router]);
 
   const handleImageUpload = (files: FileList | null) => {
     if (!files) return;
@@ -79,7 +114,7 @@ export default function AddListingPage() {
   const removeImage = (id: string) => {
     setUploadedImages(prev => {
       const imageToRemove = prev.find(img => img.id === id);
-      if (imageToRemove) {
+      if (imageToRemove && !id.startsWith('existing-')) {
         URL.revokeObjectURL(imageToRemove.preview);
       }
       return prev.filter(img => img.id !== id);
@@ -124,12 +159,16 @@ export default function AddListingPage() {
         return;
       }
 
-      // Create new listing
-      const newListing: CropListing = {
-        id: `c${Date.now()}`, // Simple ID generation
-        farmerId: 'f1', // Current farmer ID
-        farmerName: 'Ravi Kumar', // Current farmer name
-        farmerRating: 4.8, // Current farmer rating
+      const listingIndex = mockCropListings.findIndex(l => l.id === listingId);
+      if (listingIndex === -1) {
+        toast.error('Listing not found');
+        setLoading(false);
+        return;
+      }
+
+      // Update the listing
+      const updatedListing: CropListing = {
+        ...mockCropListings[listingIndex],
         cropName: formData.cropName,
         category: formData.category,
         quantity: parseFloat(formData.quantity),
@@ -138,27 +177,19 @@ export default function AddListingPage() {
         pricePerUnit: parseFloat(formData.price),
         harvestDate: new Date(formData.harvestDate),
         location: {
-          lat: 28.6139, // Default location (Delhi)
-          lng: 77.2090,
+          ...mockCropListings[listingIndex].location,
           address: formData.location,
-          city: 'Delhi', // Default city
-          state: 'Delhi', // Default state
         },
-        images: uploadedImages.map(img => img.preview), // Use object URLs for now
+        images: uploadedImages.map(img => img.preview),
         description: formData.description,
-        status: 'active',
-        views: 0,
-        createdAt: new Date(),
-        expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days from now
       };
 
-      // Add to mock data
-      mockCropListings.push(newListing);
+      mockCropListings[listingIndex] = updatedListing;
 
-      toast.success('Listing created successfully!');
+      toast.success('Listing updated successfully!');
       router.push('/farmer/my-listings');
     } catch (error) {
-      toast.error('Failed to create listing. Please try again.');
+      toast.error('Failed to update listing. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -168,12 +199,25 @@ export default function AddListingPage() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  if (initialLoading) {
+    return (
+      <PageTransition>
+        <div className="flex items-center justify-center min-h-96">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+            <p className="text-slate-600">Loading listing...</p>
+          </div>
+        </div>
+      </PageTransition>
+    );
+  }
+
   return (
     <PageTransition>
       <div className="max-w-4xl mx-auto space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 text-balance">Add New Listing</h1>
-          <p className="text-slate-600 mt-1">List your crops to connect with buyers</p>
+          <h1 className="text-3xl font-bold text-slate-900 text-balance">Edit Listing</h1>
+          <p className="text-slate-600 mt-1">Update your crop listing details</p>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -223,92 +267,81 @@ export default function AddListingPage() {
                       onClick={() => fileInputRef.current?.click()}
                     >
                       <Upload className="w-12 h-12 text-green-600 mx-auto mb-3" />
-                      <p className="text-slate-700 font-medium">
-                        {isDragOver ? 'Drop images here' : 'Click to upload or drag and drop'}
-                      </p>
-                      <p className="text-sm text-slate-500 mt-1">
-                        PNG, JPG up to 10MB each ({uploadedImages.length}/5 images)
-                      </p>
+                      <p className="text-slate-600 mb-2">Drop images here or click to browse</p>
+                      <p className="text-sm text-slate-500">PNG, JPG up to 10MB each (max 5 images)</p>
                     </div>
                   )}
-
-                  {/* Hidden File Input */}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleFileSelect}
-                  />
                 </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleFileSelect}
+                />
               </div>
 
+              {/* Crop Details */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Crop Name */}
                 <div>
                   <Label htmlFor="cropName">Crop Name *</Label>
                   <Input
                     id="cropName"
-                    placeholder="e.g., Wheat, Rice, Tomato"
-                    required
-                    className="mt-2"
                     value={formData.cropName}
                     onChange={(e) => handleInputChange('cropName', e.target.value)}
+                    placeholder="e.g., Wheat, Rice, Tomato"
+                    className="mt-1"
                   />
                 </div>
 
-                {/* Category */}
                 <div>
                   <Label htmlFor="category">Category *</Label>
-                  <Select required value={formData.category} onValueChange={(value) => handleInputChange('category', value)}>
-                    <SelectTrigger className="mt-2">
+                  <Select value={formData.category} onValueChange={(value) => handleInputChange('category', value)}>
+                    <SelectTrigger className="mt-1">
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="grains">Grains</SelectItem>
-                      <SelectItem value="vegetables">Vegetables</SelectItem>
-                      <SelectItem value="fruits">Fruits</SelectItem>
-                      <SelectItem value="pulses">Pulses</SelectItem>
-                      <SelectItem value="cash-crops">Cash Crops</SelectItem>
+                      <SelectItem value="Grains">Grains</SelectItem>
+                      <SelectItem value="Vegetables">Vegetables</SelectItem>
+                      <SelectItem value="Fruits">Fruits</SelectItem>
+                      <SelectItem value="Pulses">Pulses</SelectItem>
+                      <SelectItem value="Oilseeds">Oilseeds</SelectItem>
+                      <SelectItem value="Spices">Spices</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
-                {/* Quantity */}
                 <div>
                   <Label htmlFor="quantity">Quantity *</Label>
                   <Input
                     id="quantity"
                     type="number"
-                    placeholder="Enter quantity"
-                    required
-                    className="mt-2"
                     value={formData.quantity}
                     onChange={(e) => handleInputChange('quantity', e.target.value)}
+                    placeholder="e.g., 500"
+                    className="mt-1"
                   />
                 </div>
 
-                {/* Unit */}
                 <div>
                   <Label htmlFor="unit">Unit *</Label>
-                  <Select required value={formData.unit} onValueChange={(value) => handleInputChange('unit', value)}>
-                    <SelectTrigger className="mt-2">
+                  <Select value={formData.unit} onValueChange={(value) => handleInputChange('unit', value)}>
+                    <SelectTrigger className="mt-1">
                       <SelectValue placeholder="Select unit" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="kg">Kilogram (kg)</SelectItem>
+                      <SelectItem value="kg">Kilograms (kg)</SelectItem>
                       <SelectItem value="quintal">Quintal</SelectItem>
                       <SelectItem value="ton">Ton</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
-                {/* Quality Grade */}
                 <div>
                   <Label htmlFor="quality">Quality Grade *</Label>
-                  <Select required value={formData.quality} onValueChange={(value) => handleInputChange('quality', value)}>
-                    <SelectTrigger className="mt-2">
+                  <Select value={formData.quality} onValueChange={(value) => handleInputChange('quality', value)}>
+                    <SelectTrigger className="mt-1">
                       <SelectValue placeholder="Select quality" />
                     </SelectTrigger>
                     <SelectContent>
@@ -319,43 +352,37 @@ export default function AddListingPage() {
                   </Select>
                 </div>
 
-                {/* Price */}
                 <div>
                   <Label htmlFor="price">Price per Unit (₹) *</Label>
                   <Input
                     id="price"
                     type="number"
-                    placeholder="Enter price"
-                    required
-                    className="mt-2"
                     value={formData.price}
                     onChange={(e) => handleInputChange('price', e.target.value)}
+                    placeholder="e.g., 2500"
+                    className="mt-1"
                   />
                 </div>
 
-                {/* Harvest Date */}
                 <div>
                   <Label htmlFor="harvestDate">Harvest Date *</Label>
                   <Input
                     id="harvestDate"
                     type="date"
-                    required
-                    className="mt-2"
                     value={formData.harvestDate}
                     onChange={(e) => handleInputChange('harvestDate', e.target.value)}
+                    className="mt-1"
                   />
                 </div>
 
-                {/* Location */}
                 <div>
                   <Label htmlFor="location">Location *</Label>
                   <Input
                     id="location"
-                    placeholder="City, State"
-                    required
-                    className="mt-2"
                     value={formData.location}
                     onChange={(e) => handleInputChange('location', e.target.value)}
+                    placeholder="e.g., Village Name, City"
+                    className="mt-1"
                   />
                 </div>
               </div>
@@ -365,37 +392,29 @@ export default function AddListingPage() {
                 <Label htmlFor="description">Description</Label>
                 <Textarea
                   id="description"
-                  placeholder="Describe your crop quality, farming methods, and any special features..."
-                  rows={4}
-                  className="mt-2"
                   value={formData.description}
                   onChange={(e) => handleInputChange('description', e.target.value)}
+                  placeholder="Describe your crop, farming methods, special features..."
+                  className="mt-1 min-h-24"
                 />
               </div>
 
-              {/* Buttons */}
-              <div className="flex gap-4 pt-4">
-                <Button
-                  type="submit"
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white rounded-xl"
-                  disabled={loading}
-                >
-                  {loading ? (
-                    'Creating...'
-                  ) : (
-                    <>
-                      <Plus className="w-4 h-4 mr-2" />
-                      Create Listing
-                    </>
-                  )}
-                </Button>
+              {/* Submit Button */}
+              <div className="flex gap-4 pt-6">
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => router.back()}
-                  className="rounded-xl"
+                  onClick={() => router.push('/farmer/my-listings')}
+                  className="flex-1 rounded-xl"
                 >
                   Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 bg-green-600 hover:bg-green-700 rounded-xl"
+                >
+                  {loading ? 'Updating...' : 'Update Listing'}
                 </Button>
               </div>
             </div>

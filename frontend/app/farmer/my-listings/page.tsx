@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { PageTransition } from '@/components/animations/page-transition';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,9 +10,26 @@ import { StatusBadge } from '@/components/shared/status-badge';
 import { Search, Eye, Edit, Trash2, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
 export default function MyListingsPage() {
+  const router = useRouter();
+  const [refreshKey, setRefreshKey] = useState(0);
   const myListings = mockCropListings.filter(c => c.farmerId === 'f1');
+
+  const handleDelete = (listingId: string) => {
+    const index = mockCropListings.findIndex(l => l.id === listingId);
+    if (index !== -1) {
+      mockCropListings.splice(index, 1);
+      setRefreshKey(prev => prev + 1);
+      toast.success('Listing deleted successfully');
+    }
+  };
+
+  const handleEdit = (listingId: string) => {
+    router.push(`/farmer/edit-listing/${listingId}`);
+  };
 
   return (
     <PageTransition>
@@ -110,6 +128,7 @@ export default function MyListingsPage() {
                     variant="outline"
                     className="flex-1 rounded-xl"
                     size="sm"
+                    onClick={() => handleEdit(listing.id)}
                   >
                     <Edit className="w-4 h-4 mr-1" />
                     Edit
@@ -118,6 +137,7 @@ export default function MyListingsPage() {
                     variant="outline"
                     className="rounded-xl text-red-600 hover:bg-red-50"
                     size="sm"
+                    onClick={() => handleDelete(listing.id)}
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>

@@ -14,7 +14,7 @@ export default function SuppliersPage() {
 
   const filteredFarmers = mockFarmers.filter(farmer => 
     farmer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    farmer.location.district.toLowerCase().includes(searchQuery.toLowerCase())
+    farmer.farmLocation.city.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -48,14 +48,14 @@ export default function SuppliersPage() {
                 </div>
                 <div className="flex-1">
                   <h3 className="font-bold text-lg text-foreground">{farmer.name}</h3>
-                  <RatingDisplay rating={farmer.rating.average} count={farmer.rating.count} />
+                  <RatingDisplay rating={farmer.rating} count={0} />
                 </div>
               </div>
 
               {/* Location */}
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <MapPin className="w-4 h-4" />
-                <span>{farmer.location.district}, {farmer.location.state}</span>
+                <span>{farmer.farmLocation.city}, {farmer.farmLocation.state}</span>
               </div>
 
               {/* Farm Info */}
@@ -65,8 +65,8 @@ export default function SuppliersPage() {
                   <span className="font-medium text-foreground">{farmer.farmSize} acres</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Completed Orders</span>
-                  <span className="font-medium text-foreground">{farmer.totalOrders}</span>
+                  <span className="text-muted-foreground">Total Sales</span>
+                  <span className="font-medium text-foreground">₹{farmer.totalSales.toLocaleString()}</span>
                 </div>
               </div>
 
@@ -74,7 +74,7 @@ export default function SuppliersPage() {
               <div>
                 <p className="text-xs text-muted-foreground mb-2">SPECIALIZES IN</p>
                 <div className="flex flex-wrap gap-2">
-                  {farmer.crops.map((crop, index) => (
+                  {farmer.cropTypes.map((crop, index) => (
                     <Badge key={index} variant="secondary">{crop}</Badge>
                   ))}
                 </div>

@@ -9,6 +9,7 @@ import { ShoppingCart, Package, TrendingUp, Star, MapPin } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { mockCropListings } from '@/lib/mock-data/crops';
 import { mockAIInsights } from '@/lib/mock-data/ai-insights';
+import { useNotifications } from '@/hooks/useNotifications';
 
 const priceData = [
   { month: 'Jan', price: 45 },
@@ -20,6 +21,8 @@ const priceData = [
 ];
 
 export default function BuyerDashboardPage() {
+  // Enable real-time notifications for buyer role
+  useNotifications('b1', 'buyer');
   return (
     <div className="p-6 space-y-6">
       {/* Header */}

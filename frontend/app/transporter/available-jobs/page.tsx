@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,17 +8,32 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Search, MapPin, Package, Calendar, Truck, Navigation } from 'lucide-react';
+import { Search, MapPin, Package, Calendar, Truck, Navigation, Map } from 'lucide-react';
 import { mockTransportRequests } from '@/lib/mock-data/orders';
 import { toast } from 'sonner';
+import dynamic from 'next/dynamic';
+
+// Dynamically import MapComponent to avoid SSR issues
+const MapComponent = dynamic(() => import('@/components/map/MapComponent'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-full w-full bg-gray-100 rounded-lg flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+        <p className="text-sm text-muted-foreground">Loading map...</p>
+      </div>
+    </div>
+  ),
+});
 
 export default function AvailableJobsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [distanceFilter, setDistanceFilter] = useState('all');
   const [selectedJob, setSelectedJob] = useState<typeof mockTransportRequests[0] | null>(null);
   const [showJobDialog, setShowJobDialog] = useState(false);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
 
-  const availableJobs = mockTransportRequests.filter(r => r.status === 'pending');
+  const availableJobs = transportRequests.filter(r => r.status === 'pending');
 
   const filteredJobs = availableJobs.filter(job => {
     const matchesSearch = 
@@ -35,8 +50,29 @@ export default function AvailableJobsPage() {
   });
 
   const handleAcceptJob = () => {
-    toast.success('Job accepted successfully!');
-    setShowJobDialog(false);
+    if (selectedJob) {
+      // Update job status to accepted
+      setTransportRequests(prev => 
+        prev.map(job => 
+          job.id === selectedJob.id 
+            ? { ...job, status: 'accepted' as const, transporterId: 'current-transporter' }
+            : job
+        )
+      );
+      
+      // Store accepted job in localStorage for persistence
+      const acceptedJobs = JSON.parse(localStorage.getItem('acceptedJobs') || '[]');
+      const updatedJob = { ...selectedJob, status: 'accepted', transporterId: 'current-transporter' };
+      localStorage.setItem('acceptedJobs', JSON.stringify([...acceptedJobs, updatedJob]));
+      
+      toast.success('Job accepted successfully! Check your dashboard for active deliveries.');
+      setShowJobDialog(false);
+    }
+  };
+
+  const handleViewRoute = (job: typeof mockTransportRequests[0]) => {
+    setSelectedJob(job);
+    setShowRouteDialog(true);
   };
 
   return (
@@ -168,7 +204,19 @@ export default function AvailableJobsPage() {
                 >
                   Accept Job
                 </Button>
-                <Button variant="outline">View Route</Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setSelectedJob(job);
+                    setShowDetailsDialog(true);
+                  }}
+                >
+                  View Details
+                </Button>
+                <Button variant="outline" onClick={() => handleViewRoute(job)}>
+                  <Map className="w-4 h-4 mr-2" />
+                  View Route
+                </Button>
               </div>
             </div>
           </Card>
@@ -209,6 +257,201 @@ export default function AvailableJobsPage() {
             </Button>
             <Button onClick={handleAcceptJob}>
               Confirm Acceptance
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Route View Dialog */}
+      <Dialog open={showRouteDialog} onOpenChange={setShowRouteDialog}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Delivery Route</DialogTitle>
+            <DialogDescription>
+              Route from {selectedJob?.pickupLocation.city} to {selectedJob?.deliveryLocation.city}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Route Details */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <h4 className="font-semibold text-sm">Pickup Location</h4>
+                <div className="p-3 rounded-lg bg-green-50 border border-green-200">
+                  <div className="flex items-start gap-2">
+                    <MapPin className="w-4 h-4 text-green-600 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-green-800">{selectedJob?.pickupLocation.city}</p>
+                      <p className="text-sm text-green-600">{selectedJob?.pickupLocation.address}</p>
+                      <p className="text-sm text-green-600">{selectedJob?.pickupLocation.pincode}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <h4 className="font-semibold text-sm">Delivery Location</h4>
+                <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+                  <div className="flex items-start gap-2">
+                    <MapPin className="w-4 h-4 text-blue-600 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-blue-800">{selectedJob?.deliveryLocation.city}</p>
+                      <p className="text-sm text-blue-600">{selectedJob?.deliveryLocation.address}</p>
+                      <p className="text-sm text-blue-600">{selectedJob?.deliveryLocation.pincode}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Map */}
+            <div className="relative h-96 bg-gray-100 rounded-lg overflow-hidden border">
+              {selectedJob && (
+                <MapComponent
+                  pickupLocation={{
+                    lat: selectedJob.pickupLocation.lat || 28.6139,
+                    lng: selectedJob.pickupLocation.lng || 77.2090,
+                    city: selectedJob.pickupLocation.city,
+                    address: selectedJob.pickupLocation.address,
+                  }}
+                  deliveryLocation={{
+                    lat: selectedJob.deliveryLocation.lat || 28.4595,
+                    lng: selectedJob.deliveryLocation.lng || 77.0266,
+                    city: selectedJob.deliveryLocation.city,
+                    address: selectedJob.deliveryLocation.address,
+                  }}
+                  showRoute={true}
+                />
+              )}
+            </div>
+
+            {/* Route Stats */}
+            <div className="grid grid-cols-3 gap-4 p-4 bg-secondary/30 rounded-lg">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-primary">{selectedJob?.distance} km</p>
+                <p className="text-sm text-muted-foreground">Distance</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-primary">₹{selectedJob?.price}</p>
+                <p className="text-sm text-muted-foreground">Earnings</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-primary">{Math.ceil((selectedJob?.distance || 0) / 40)}h</p>
+                <p className="text-sm text-muted-foreground">Est. Time</p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRouteDialog(false)}>
+              Close
+            </Button>
+            <Button onClick={() => {
+              setShowRouteDialog(false);
+              setSelectedJob(selectedJob);
+              setShowJobDialog(true);
+            }}>
+              Accept Job
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Details Dialog */}
+      <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Package className="w-5 h-5" />
+              Job Details - Order #{selectedJob?.orderId.slice(-8)}
+            </DialogTitle>
+            <DialogDescription>
+              Complete information about this delivery job
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            {/* Job Overview */}
+            <div className="p-4 bg-secondary/30 rounded-lg">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="font-semibold text-lg text-foreground">
+                    {selectedJob?.pickupLocation.city} → {selectedJob?.deliveryLocation.city}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">Order #{selectedJob?.orderId}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-primary">₹{selectedJob?.price}</p>
+                  <p className="text-sm text-muted-foreground">Delivery fee</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Distance</p>
+                  <p className="font-semibold text-foreground">{selectedJob?.distance} km</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Vehicle Type</p>
+                  <p className="font-semibold text-foreground">{selectedJob?.vehicleType}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Pickup Date</p>
+                  <p className="font-semibold text-foreground">{selectedJob ? new Date(selectedJob.pickupDate).toLocaleDateString() : ''}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Cargo Weight</p>
+                  <p className="font-semibold text-foreground">{selectedJob?.weight || 500} kg</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Pickup Location */}
+            <div className="space-y-2">
+              <h4 className="font-semibold text-sm flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-green-600" />
+                Pickup Location
+              </h4>
+              <div className="p-3 rounded-lg bg-green-50 border border-green-200">
+                <p className="font-medium text-green-800">{selectedJob?.pickupLocation.city}, {selectedJob?.pickupLocation.state}</p>
+                <p className="text-sm text-green-600">{selectedJob?.pickupLocation.address}</p>
+                <p className="text-sm text-green-600">PIN: {selectedJob?.pickupLocation.pincode}</p>
+              </div>
+            </div>
+
+            {/* Delivery Location */}
+            <div className="space-y-2">
+              <h4 className="font-semibold text-sm flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-blue-600" />
+                Delivery Location
+              </h4>
+              <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+                <p className="font-medium text-blue-800">{selectedJob?.deliveryLocation.city}, {selectedJob?.deliveryLocation.state}</p>
+                <p className="text-sm text-blue-600">{selectedJob?.deliveryLocation.address}</p>
+                <p className="text-sm text-blue-600">PIN: {selectedJob?.deliveryLocation.pincode}</p>
+              </div>
+            </div>
+
+            {/* Additional Information */}
+            <div className="grid grid-cols-2 gap-4 p-4 bg-secondary/30 rounded-lg">
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Estimated Travel Time</p>
+                <p className="font-semibold text-foreground">{Math.ceil((selectedJob?.distance || 0) / 40)} hours</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Fuel Cost Estimate</p>
+                <p className="font-semibold text-foreground">₹{Math.ceil((selectedJob?.distance || 0) * 8)}</p>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDetailsDialog(false)}>
+              Close
+            </Button>
+            <Button onClick={() => {
+              setShowDetailsDialog(false);
+              setSelectedJob(selectedJob);
+              setShowJobDialog(true);
+            }}>
+              Accept Job
             </Button>
           </DialogFooter>
         </DialogContent>

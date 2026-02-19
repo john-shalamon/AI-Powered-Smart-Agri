@@ -10,6 +10,7 @@ import { mockFarmers } from '@/lib/mock-data/farmers';
 import { mockBuyers } from '@/lib/mock-data/buyers';
 import { mockOrders } from '@/lib/mock-data/orders';
 import { mockCropListings } from '@/lib/mock-data/crops';
+import { useNotifications } from '@/hooks/useNotifications';
 
 const monthlyData = [
   { month: 'Jan', orders: 120, revenue: 450000 },
@@ -27,6 +28,7 @@ const userDistribution = [
 ];
 
 export default function AdminDashboardPage() {
+  useNotifications('a1', 'admin');
   const totalUsers = mockFarmers.length + mockBuyers.length + 4;
   const activeOrders = mockOrders.filter(o => ['pending', 'confirmed', 'in_transit'].includes(o.status)).length;
   const totalRevenue = monthlyData.reduce((sum, m) => sum + m.revenue, 0);

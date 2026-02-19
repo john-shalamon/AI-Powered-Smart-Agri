@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 
 import './globals.css'
+import { SocketProvider } from '../lib/socket.tsx'
+import { Toaster } from '../components/ui/sonner'
 
 const _geist = Geist({ subsets: ['latin'] })
 const _geistMono = Geist_Mono({ subsets: ['latin'] })
@@ -19,7 +21,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="font-sans antialiased">{children}</body>
+      <head>
+        <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+      </head>
+      <body className="font-sans antialiased">
+        <SocketProvider>
+          {children}
+          <Toaster />
+        </SocketProvider>
+      </body>
     </html>
   )
 }

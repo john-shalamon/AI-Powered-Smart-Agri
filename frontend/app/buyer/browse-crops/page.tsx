@@ -9,17 +9,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Search, Filter, MapPin, Star, ShoppingCart, Leaf, Calendar } from 'lucide-react';
-import { mockCrops } from '@/lib/mock-data/crops';
+import { mockCropListings } from '@/lib/mock-data/crops';
 import { toast } from 'sonner';
 
 export default function BrowseCropsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const [selectedCrop, setSelectedCrop] = useState<typeof mockCrops[0] | null>(null);
+  const [selectedCrop, setSelectedCrop] = useState<typeof mockCropListings[0] | null>(null);
   const [orderQuantity, setOrderQuantity] = useState('');
   const [showOrderDialog, setShowOrderDialog] = useState(false);
 
-  const availableCrops = mockCrops.filter(c => c.status === 'available');
+  const availableCrops = mockCropListings.filter(c => c.status === 'active');
   
   const filteredCrops = availableCrops.filter(crop => {
     const matchesSearch = crop.cropName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -118,7 +118,7 @@ export default function BrowseCropsPage() {
 
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <MapPin className="w-4 h-4" />
-                <span>{crop.location.district}, {crop.location.state}</span>
+                <span>{crop.location.city}, {crop.location.state}</span>
               </div>
 
               <div className="flex items-center gap-2 text-sm text-muted-foreground">

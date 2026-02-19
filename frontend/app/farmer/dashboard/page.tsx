@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useNotifications } from '@/hooks/useNotifications';
 
 const priceData = [
   { date: 'Feb 1', price: 2380 },
@@ -20,6 +21,9 @@ const priceData = [
 ];
 
 export default function FarmerDashboard() {
+  // Enable real-time notifications for farmer role
+  useNotifications('f1', 'farmer');
+
   const activeListings = mockCropListings.filter(c => c.farmerId === 'f1' && c.status === 'active');
 
   return (

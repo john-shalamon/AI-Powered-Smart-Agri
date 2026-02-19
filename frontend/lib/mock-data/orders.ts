@@ -4,6 +4,7 @@ export interface MockOrder {
   id: string;
   cropId: string;
   cropName: string;
+  cropImage: string;
   farmerId: string;
   farmerName: string;
   buyerId: string;
@@ -12,7 +13,7 @@ export interface MockOrder {
   unit: string;
   pricePerUnit: number;
   totalAmount: number;
-  status: 'pending' | 'confirmed' | 'in_transit' | 'delivered' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'in-transit' | 'delivered' | 'cancelled';
   deliveryLocation: {
     address: string;
     city: string;
@@ -25,6 +26,7 @@ export interface MockOrder {
     state: string;
     pincode: string;
   };
+  estimatedDelivery?: string;
   createdAt: string;
   timeline: {
     status: string;
@@ -38,6 +40,7 @@ export const mockOrders: MockOrder[] = [
     id: 'o1',
     cropId: 'c1',
     cropName: 'Wheat',
+    cropImage: '/placeholder.svg?height=400&width=400',
     farmerId: 'f1',
     farmerName: 'Ravi Kumar',
     buyerId: 'b1',
@@ -59,6 +62,7 @@ export const mockOrders: MockOrder[] = [
       state: 'Delhi',
       pincode: '143001',
     },
+    estimatedDelivery: '2024-02-25',
     createdAt: '2024-02-18',
     timeline: [
       { status: 'Order Placed', timestamp: '2024-02-18T10:00:00', completed: true },
@@ -70,6 +74,7 @@ export const mockOrders: MockOrder[] = [
     id: 'o2',
     cropId: 'c2',
     cropName: 'Tomato',
+    cropImage: '/placeholder.svg?height=400&width=400',
     farmerId: 'f3',
     farmerName: 'Lakshmi Reddy',
     buyerId: 'b1',
@@ -78,7 +83,7 @@ export const mockOrders: MockOrder[] = [
     unit: 'kg',
     pricePerUnit: 35,
     totalAmount: 17500,
-    status: 'in_transit',
+    status: 'in-transit',
     deliveryLocation: {
       address: 'Linking Road, Bandra',
       city: 'Mumbai',
@@ -91,6 +96,7 @@ export const mockOrders: MockOrder[] = [
       state: 'Telangana',
       pincode: '500001',
     },
+    estimatedDelivery: '2024-02-22',
     createdAt: '2024-02-17',
     timeline: [
       { status: 'Order Placed', timestamp: '2024-02-17T09:15:00', completed: true },
@@ -103,6 +109,7 @@ export const mockOrders: MockOrder[] = [
     id: 'o3',
     cropId: 'c5',
     cropName: 'Onion',
+    cropImage: '/placeholder.svg?height=400&width=400',
     farmerId: 'f5',
     farmerName: 'Ganesh Naik',
     buyerId: 'b2',
@@ -124,6 +131,7 @@ export const mockOrders: MockOrder[] = [
       state: 'Maharashtra',
       pincode: '400064',
     },
+    estimatedDelivery: '2024-02-18',
     createdAt: '2024-02-14',
     timeline: [
       { status: 'Order Placed', timestamp: '2024-02-14T11:00:00', completed: true },
@@ -136,6 +144,7 @@ export const mockOrders: MockOrder[] = [
     id: 'o4',
     cropId: 'c3',
     cropName: 'Potato',
+    cropImage: '/placeholder.svg?height=400&width=400',
     farmerId: 'f4',
     farmerName: 'Manjeet Singh',
     buyerId: 'b5',
@@ -157,6 +166,7 @@ export const mockOrders: MockOrder[] = [
       state: 'Punjab',
       pincode: '143001',
     },
+    estimatedDelivery: '2024-02-28',
     createdAt: '2024-02-20',
     timeline: [
       { status: 'Order Placed', timestamp: '2024-02-20T13:20:00', completed: true },
@@ -167,6 +177,7 @@ export const mockOrders: MockOrder[] = [
     id: 'o5',
     cropId: 'c6',
     cropName: 'Rice',
+    cropImage: '/placeholder.svg?height=400&width=400',
     farmerId: 'f3',
     farmerName: 'Lakshmi Reddy',
     buyerId: 'b3',
@@ -188,6 +199,7 @@ export const mockOrders: MockOrder[] = [
       state: 'Telangana',
       pincode: '500001',
     },
+    estimatedDelivery: '2024-02-28',
     createdAt: '2024-02-21',
     timeline: [
       { status: 'Order Placed', timestamp: '2024-02-21T09:00:00', completed: true },

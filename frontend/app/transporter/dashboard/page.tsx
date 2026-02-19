@@ -4,9 +4,13 @@ import { Card } from '@/components/ui/card';
 import { StatCard } from '@/components/dashboard/stat-card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Truck, Package, DollarSign, Star, MapPin, Calendar } from 'lucide-react';
+import { Truck, Package, DollarSign, Star, MapPin, Calendar, Navigation } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { mockTransportRequests } from '@/lib/mock-data/transport-requests';
+import { useState, useEffect } from 'react';
+import DeliveryTracking from '@/components/tracking/DeliveryTracking';
+import TrackingStatusBar, { TrackingStatus } from '@/components/tracking/TrackingStatusBar';
+import { useNotifications } from '@/hooks/useNotifications';
 
 const earningsData = [
   { month: 'Jan', earnings: 45000 },
@@ -18,9 +22,57 @@ const earningsData = [
 ];
 
 export default function TransporterDashboardPage() {
-  const activeDeliveries = mockTransportRequests.filter(
-    (r) => r.status === 'accepted' || r.status === 'in_transit'
-  );
+  useNotifications('t1', 'transporter');
+  const [acceptedJobs, setAcceptedJobs] = useState<any[]>([]);
+
+  // Mock tracking data for deliveries
+  const mockTrackingData: Record<string, { history: TrackingStatus[], transporter: any }> = {
+    'req1': {
+      history: [
+        {
+          id: 't1',
+          status: 'pickup_scheduled',
+          timestamp: '2024-02-17T08:00:00Z',
+          description: 'Pickup Scheduled',
+          updatedBy: 'system'
+        },
+        {
+          id: 't2',
+          status: 'picked_up',
+          timestamp: '2024-02-17T10:30:00Z',
+          location: 'Hisar Farm',
+          description: 'Picked Up',
+          updatedBy: 'transporter',
+          notes: 'Crop loaded successfully, quality verified'
+        },
+        {
+          id: 't3',
+          status: 'in_transit',
+          timestamp: '2024-02-17T11:00:00Z',
+          location: 'NH-44 Highway, approaching Delhi',
+          description: 'In Transit',
+          updatedBy: 'transporter'
+        }
+      ],
+      transporter: {
+        name: 'Vikram Yadav',
+        phone: '+91 9876543210',
+        vehicleNumber: 'HR-26-AB-1234'
+      }
+    }
+  };
+
+  useEffect(() => {
+    // Load accepted jobs from localStorage
+    const storedJobs = JSON.parse(localStorage.getItem('acceptedJobs') || '[]');
+    setAcceptedJobs(storedJobs);
+  }, []);
+
+  const handleStatusUpdate = (orderId: string, statusUpdate: TrackingStatus) => {
+    // Here you would update the tracking status in backend
+    console.log('Status update:', orderId, statusUpdate);
+    // Update local state or refetch data
+  };
   const completedDeliveries = mockTransportRequests.filter(
     (r) => r.status === 'delivered'
   ).length;
@@ -98,28 +150,17 @@ export default function TransporterDashboardPage() {
             <h3 className="text-xl font-semibold text-slate-900">Active Deliveries</h3>
             <Button variant="link" size="sm">View All</Button>
           </div>
-          <div className="space-y-3">
-            {activeDeliveries.slice(0, 4).map((delivery) => (
-              <div key={delivery.id} className="flex items-center justify-between p-3 rounded-xl bg-green-50/50 hover:bg-green-50 transition-colors border border-green-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
-                    <Package className="w-6 h-6 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-slate-900">Order #{delivery.orderId}</p>
-                    <div className="flex items-center gap-2 text-sm text-slate-500">
-                      <MapPin className="w-3 h-3" />
-                      <span>{delivery.distance} km</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="font-semibold text-green-600">{'₹'}{delivery.price}</p>
-                  <Badge variant={delivery.status === 'in_transit' ? 'default' : 'secondary'}>
-                    {delivery.status.replace('_', ' ')}
-                  </Badge>
-                </div>
-              </div>
+          <div className="space-y-6">
+            {activeDeliveries.slice(0, 2).map((delivery) => (
+              <TrackingStatusBar
+                key={delivery.id}
+                orderId={delivery.orderId || delivery.id}
+                currentStatus={delivery.status === 'accepted' ? 'pickup_scheduled' : 'in_transit'}
+                trackingHistory={mockTrackingData[delivery.id]?.history || []}
+                onStatusUpdate={(status) => handleStatusUpdate(delivery.id, status)}
+                userRole="transporter"
+                transporterInfo={mockTrackingData[delivery.id]?.transporter}
+              />
             ))}
             {activeDeliveries.length === 0 && (
               <p className="text-sm text-slate-500 text-center py-4">No active deliveries</p>
