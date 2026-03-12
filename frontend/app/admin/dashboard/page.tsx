@@ -149,6 +149,9 @@ export default function AdminDashboardPage() {
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-semibold text-slate-900">Recent Orders</h3>
             <Button variant="link" size="sm" asChild><Link href="/admin/crops-orders">View All</Link></Button>
+          </div>
+          <div className="space-y-3">
+            {mockOrders.slice(0, 3).map((order) => (
               <div key={order.id} className="flex items-center justify-between p-3 rounded-xl bg-green-50/50 hover:bg-green-50 transition-colors border border-green-100">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
@@ -175,6 +178,9 @@ export default function AdminDashboardPage() {
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-semibold text-slate-900">System Alerts</h3>
             <Button variant="link" size="sm" asChild><Link href="/admin/reports">View All</Link></Button>
+          </div>
+          <div className="space-y-3">
+            <div className="flex items-start gap-3 p-3 rounded-xl bg-yellow-50 border border-yellow-200">
               <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 shrink-0" />
               <div className="flex-1">
                 <p className="font-medium text-slate-900 text-sm">Payment Pending</p>
