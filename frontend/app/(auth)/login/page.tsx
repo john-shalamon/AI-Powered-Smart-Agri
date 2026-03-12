@@ -16,31 +16,30 @@ import {
 import { Leaf, LogIn } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { UserRole } from '@/lib/types/user';
+import { useAuth } from '@/lib/auth';
+import { toast } from 'sonner';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login, isLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole>('farmer');
-  const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
 
-    // Mock authentication
-    setTimeout(() => {
-      const user = {
-        id: '1',
-        email,
-        name: email.split('@')[0],
-        role,
-      };
+    try {
+      await login(email, password);
 
-      localStorage.setItem('user', JSON.stringify(user));
+      // Get user from localStorage to determine role for redirect
+      const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const userRole = storedUser.role || role;
+
+      toast.success('Login successful!');
 
       // Redirect based on role
-      switch (role) {
+      switch (userRole) {
         case 'farmer':
           router.push('/farmer/dashboard');
           break;
@@ -54,7 +53,24 @@ export default function LoginPage() {
           router.push('/admin/dashboard');
           break;
       }
-    }, 1000);
+    } catch (error: any) {
+      toast.error(error.message || 'Login failed. Please check your credentials.');
+    }
+  };
+
+  const fillDemoCredentials = (demoRole: string) => {
+    const creds: Record<string, { email: string; password: string; role: UserRole }> = {
+      farmer: { email: 'ravi@farmer.com', password: 'password123', role: 'farmer' },
+      buyer: { email: 'amit@buyer.com', password: 'password123', role: 'buyer' },
+      transporter: { email: 'rajesh@transport.com', password: 'password123', role: 'transporter' },
+      admin: { email: 'admin@agriai.com', password: 'password123', role: 'admin' },
+    };
+    const c = creds[demoRole];
+    if (c) {
+      setEmail(c.email);
+      setPassword(c.password);
+      setRole(c.role);
+    }
   };
 
   return (
@@ -119,9 +135,9 @@ export default function LoginPage() {
         <Button
           type="submit"
           className="w-full bg-green-600 hover:bg-green-700 text-white rounded-xl shadow-md hover:shadow-lg transition-all"
-          disabled={loading}
+          disabled={isLoading}
         >
-          {loading ? (
+          {isLoading ? (
             'Signing in...'
           ) : (
             <>
@@ -139,6 +155,49 @@ export default function LoginPage() {
             Sign up
           </Link>
         </p>
+      </div>
+
+      {/* Demo Credentials */}
+      <div className="mt-6 pt-6 border-t border-green-100">
+        <p className="text-xs text-slate-500 text-center mb-3">Quick Demo Login</p>
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="text-xs border-green-200 hover:bg-green-50"
+            onClick={() => fillDemoCredentials('farmer')}
+          >
+            🌾 Farmer
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="text-xs border-blue-200 hover:bg-blue-50"
+            onClick={() => fillDemoCredentials('buyer')}
+          >
+            🛒 Buyer
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="text-xs border-orange-200 hover:bg-orange-50"
+            onClick={() => fillDemoCredentials('transporter')}
+          >
+            🚛 Transporter
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="text-xs border-purple-200 hover:bg-purple-50"
+            onClick={() => fillDemoCredentials('admin')}
+          >
+            👨‍💼 Admin
+          </Button>
+        </div>
       </div>
     </motion.div>
   );

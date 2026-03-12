@@ -36,7 +36,7 @@ export default function TransporterProfilePage() {
                 <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center text-3xl">
                   🚛
                 </div>
-                <Button variant="outline">Change Photo</Button>
+                <Button variant="outline" onClick={() => toast.info('Photo upload feature coming soon!')}>Change Photo</Button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -147,11 +147,11 @@ export default function TransporterProfilePage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
                     <p className="text-sm text-muted-foreground mb-2">Driving License</p>
-                    <Button variant="outline" size="sm">Upload</Button>
+                    <Button variant="outline" size="sm" onClick={() => toast.info('Document upload feature coming soon!')}>Upload</Button>
                   </div>
                   <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
                     <p className="text-sm text-muted-foreground mb-2">Vehicle RC</p>
-                    <Button variant="outline" size="sm">Upload</Button>
+                    <Button variant="outline" size="sm" onClick={() => toast.info('Document upload feature coming soon!')}>Upload</Button>
                   </div>
                 </div>
               </div>

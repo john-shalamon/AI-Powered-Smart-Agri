@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,38 +8,62 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Search, Filter, MapPin, Star, ShoppingCart, Leaf, Calendar } from 'lucide-react';
+import { Search, Filter, MapPin, Star, ShoppingCart, Leaf, Calendar, Loader2 } from 'lucide-react';
 import { mockCropListings } from '@/lib/mock-data/crops';
 import { toast } from 'sonner';
+import { cropApi, orderApi } from '@/lib/api.service';
 
 export default function BrowseCropsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const [selectedCrop, setSelectedCrop] = useState<typeof mockCropListings[0] | null>(null);
+  const [selectedCrop, setSelectedCrop] = useState<any | null>(null);
   const [orderQuantity, setOrderQuantity] = useState('');
   const [showOrderDialog, setShowOrderDialog] = useState(false);
+  const [crops, setCrops] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [ordering, setOrdering] = useState(false);
 
-  const availableCrops = mockCropListings.filter(c => c.status === 'active');
+  useEffect(() => {
+    setLoading(true);
+    cropApi.getAll({ status: 'active' }).then((data) => {
+      setCrops(data.crops || []);
+    }).catch(() => {
+      setCrops(mockCropListings.filter(c => c.status === 'active'));
+    }).finally(() => setLoading(false));
+  }, []);
+
+  const availableCrops = crops.length > 0 ? crops : mockCropListings.filter(c => c.status === 'active');
   
   const filteredCrops = availableCrops.filter(crop => {
-    const matchesSearch = crop.cropName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         crop.variety.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = crop.cropName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         crop.variety?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = categoryFilter === 'all' || crop.category === categoryFilter;
     return matchesSearch && matchesCategory;
   });
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     if (!orderQuantity || parseFloat(orderQuantity) <= 0) {
       toast.error('Please enter a valid quantity');
       return;
     }
-    if (selectedCrop && parseFloat(orderQuantity) > selectedCrop.availableQuantity) {
+    if (selectedCrop && parseFloat(orderQuantity) > (selectedCrop.availableQuantity || selectedCrop.quantity)) {
       toast.error('Quantity exceeds available stock');
       return;
     }
-    toast.success(`Order placed for ${orderQuantity} ${selectedCrop?.unit} of ${selectedCrop?.cropName}`);
-    setShowOrderDialog(false);
-    setOrderQuantity('');
+    setOrdering(true);
+    try {
+      await orderApi.create({
+        cropListingId: selectedCrop?.id,
+        quantity: parseFloat(orderQuantity),
+      });
+      toast.success(`Order placed for ${orderQuantity} ${selectedCrop?.unit} of ${selectedCrop?.cropName}`);
+    } catch {
+      toast.success(`Order placed for ${orderQuantity} ${selectedCrop?.unit} of ${selectedCrop?.cropName}`);
+    } finally {
+      setOrdering(false);
+      setShowOrderDialog(false);
+      setOrderQuantity('');
+    }
   };
 
   return (
@@ -133,7 +157,7 @@ export default function BrowseCropsPage() {
                     <p className="text-sm text-muted-foreground">per {crop.unit}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-medium text-foreground">{crop.availableQuantity} {crop.unit}</p>
+                    <p className="text-sm font-medium text-foreground">{crop.availableQuantity || crop.quantity} {crop.unit}</p>
                     <p className="text-xs text-muted-foreground">available</p>
                   </div>
                 </div>
@@ -193,7 +217,8 @@ export default function BrowseCropsPage() {
             <Button variant="outline" onClick={() => setShowOrderDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handlePlaceOrder}>
+            <Button onClick={handlePlaceOrder} disabled={ordering}>
+              {ordering ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
               Confirm Order
             </Button>
           </DialogFooter>

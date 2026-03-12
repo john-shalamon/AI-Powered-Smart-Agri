@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google'
 
 import './globals.css'
 import { SocketProvider } from '../lib/socket.tsx'
+import { AuthProvider } from '../lib/auth'
 import { Toaster } from '../components/ui/sonner'
 
 const _geist = Geist({ subsets: ['latin'] })
@@ -25,10 +26,12 @@ export default function RootLayout({
         <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
       </head>
       <body className="font-sans antialiased">
-        <SocketProvider>
-          {children}
-          <Toaster />
-        </SocketProvider>
+        <AuthProvider>
+          <SocketProvider>
+            {children}
+            <Toaster />
+          </SocketProvider>
+        </AuthProvider>
       </body>
     </html>
   )

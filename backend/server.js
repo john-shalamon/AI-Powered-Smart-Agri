@@ -10,30 +10,112 @@ const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
     origin: process.env.FRONTEND_URL || "http://localhost:3000",
-    methods: ["GET", "POST"]
+    methods: ["GET", "POST", "PUT", "DELETE"]
   }
 });
 
 // Note: Using mock data for MVP - MongoDB connection removed for simplicity
 
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// CORS configuration
+app.use(cors({
+  origin: process.env.FRONTEND_URL || "http://localhost:3000",
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Request logging middleware
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    if (req.url !== '/api/health') {
+      console.log(`${req.method} ${req.url} ${res.statusCode} ${duration}ms`);
+    }
+  });
+  next();
+});
+
+// Simple rate limiting (per IP, 100 requests per minute)
+const rateLimitMap = new Map();
+app.use((req, res, next) => {
+  const ip = req.ip || req.connection.remoteAddress;
+  const now = Date.now();
+  const windowMs = 60 * 1000;
+  const maxRequests = 100;
+
+  if (!rateLimitMap.has(ip)) {
+    rateLimitMap.set(ip, { count: 1, startTime: now });
+  } else {
+    const entry = rateLimitMap.get(ip);
+    if (now - entry.startTime > windowMs) {
+      rateLimitMap.set(ip, { count: 1, startTime: now });
+    } else {
+      entry.count++;
+      if (entry.count > maxRequests) {
+        return res.status(429).json({ error: 'Too many requests. Please try again later.' });
+      }
+    }
+  }
+  next();
+});
 
 // Serve uploaded images
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date(), uptime: process.uptime() });
+});
+
+// Auth routes
+const authRoutes = require('./routes/auth.routes');
+app.use('/api/auth', authRoutes);
 
 // AI routes
 const aiRoutes = require('./routes/ai.routes');
 app.use('/api/ai', aiRoutes);
 
-// User routes
+// User routes (legacy, kept for compatibility)
 const userRoutes = require('./routes/user.routes');
 app.use('/api/users', userRoutes);
+
+// Crop routes
+const cropRoutes = require('./routes/crop.routes');
+app.use('/api/crops', cropRoutes);
+
+// Order routes
+const orderRoutes = require('./routes/order.routes');
+app.use('/api/orders', orderRoutes);
+
+// Transport routes
+const transportRoutes = require('./routes/transport.routes');
+app.use('/api/transport', transportRoutes);
 
 // Payment routes
 const paymentRoutes = require('./routes/payment.routes');
 app.use('/api/payments', paymentRoutes);
+
+// Weather routes
+const weatherRoutes = require('./routes/weather.routes');
+app.use('/api/weather', weatherRoutes);
+
+// Notification routes
+const notificationRoutes = require('./routes/notification.routes');
+app.use('/api/notifications', notificationRoutes);
+
+// Admin routes
+const adminRoutes = require('./routes/admin.routes');
+app.use('/api/admin', adminRoutes);
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err.message);
+  res.status(500).json({ error: 'Internal server error' });
+});
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {

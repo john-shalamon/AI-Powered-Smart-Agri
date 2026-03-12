@@ -94,8 +94,8 @@ export default function SuppliersPage() {
 
               {/* Actions */}
               <div className="flex gap-2 pt-2">
-                <Button className="flex-1">View Profile</Button>
-                <Button variant="outline">
+                <Button className="flex-1" onClick={() => toast.info('View profile feature coming soon!')}>View Profile</Button>
+                <Button variant="outline" onClick={() => toast.info('Messaging feature coming soon!')}>
                   <MessageSquare className="w-4 h-4" />
                 </Button>
               </div>

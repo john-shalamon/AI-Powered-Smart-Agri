@@ -113,8 +113,8 @@ export default function ContractsPage() {
 
               {/* Actions */}
               <div className="flex gap-2">
-                <Button variant="outline" className="flex-1">View Details</Button>
-                <Button variant="outline" className="flex-1">Download</Button>
+                <Button variant="outline" className="flex-1" onClick={() => toast.info('View contract details feature coming soon!')}>View Details</Button>
+                <Button variant="outline" className="flex-1" onClick={() => toast.info('Download contract feature coming soon!')}>Download</Button>
               </div>
             </div>
           </Card>

@@ -56,12 +56,15 @@ export default function DeliveryTracking({ delivery }: DeliveryTrackingProps) {
       const interval = setInterval(() => {
         // Simulate movement along the route
         const progress = Math.random() * 0.8 + 0.1; // 10-90% progress
-        const currentLat = delivery.pickupLocation.lat +
-          (delivery.deliveryLocation.lat - delivery.pickupLocation.lat) * progress;
-        const currentLng = delivery.pickupLocation.lng +
-          (delivery.deliveryLocation.lng - delivery.pickupLocation.lng) * progress;
+        if (delivery.pickupLocation.lat !== undefined && delivery.deliveryLocation.lat !== undefined &&
+            delivery.pickupLocation.lng !== undefined && delivery.deliveryLocation.lng !== undefined) {
+          const currentLat = delivery.pickupLocation.lat +
+            (delivery.deliveryLocation.lat - delivery.pickupLocation.lat) * progress;
+          const currentLng = delivery.pickupLocation.lng +
+            (delivery.deliveryLocation.lng - delivery.pickupLocation.lng) * progress;
 
-        setCurrentLocation({ lat: currentLat, lng: currentLng });
+          setCurrentLocation({ lat: currentLat, lng: currentLng });
+        }
       }, 3000); // Update every 3 seconds
 
       return () => clearInterval(interval);

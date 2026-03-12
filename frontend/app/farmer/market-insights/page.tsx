@@ -29,6 +29,12 @@ const mockMarketPrices = [
       { date: 'Feb 15', price: 2500 },
       { date: 'Feb 20', price: 2500 },
     ],
+    aiPrediction: {
+      nextWeekPrice: 2550,
+      confidence: 75,
+      bestDayToSell: 'Feb 27',
+      recommendation: 'Strong upward trend expected. Consider holding for better prices.',
+    },
   },
   {
     cropName: 'Rice',
@@ -44,6 +50,12 @@ const mockMarketPrices = [
       { date: 'Feb 15', price: 3150 },
       { date: 'Feb 20', price: 3200 },
     ],
+    aiPrediction: {
+      nextWeekPrice: 3150,
+      confidence: 68,
+      bestDayToSell: 'Feb 25',
+      recommendation: 'Slight downward pressure. Monitor closely for recovery.',
+    },
   },
   {
     cropName: 'Tomato',
@@ -59,6 +71,12 @@ const mockMarketPrices = [
       { date: 'Feb 15', price: 34 },
       { date: 'Feb 20', price: 35 },
     ],
+    aiPrediction: {
+      nextWeekPrice: 38,
+      confidence: 82,
+      bestDayToSell: 'Feb 28',
+      recommendation: 'Excellent growth potential. Market demand is high.',
+    },
   },
   {
     cropName: 'Onion',
@@ -74,6 +92,12 @@ const mockMarketPrices = [
       { date: 'Feb 15', price: 25 },
       { date: 'Feb 20', price: 25 },
     ],
+    aiPrediction: {
+      nextWeekPrice: 23,
+      confidence: 70,
+      bestDayToSell: 'Feb 24',
+      recommendation: 'Declining trend. Consider selling soon to avoid further losses.',
+    },
   },
   {
     cropName: 'Potato',
@@ -89,6 +113,12 @@ const mockMarketPrices = [
       { date: 'Feb 15', price: 18 },
       { date: 'Feb 20', price: 18 },
     ],
+    aiPrediction: {
+      nextWeekPrice: 19,
+      confidence: 73,
+      bestDayToSell: 'Feb 26',
+      recommendation: 'Stable growth expected. Good time to sell.',
+    },
   },
   {
     cropName: 'Maize',
@@ -104,6 +134,12 @@ const mockMarketPrices = [
       { date: 'Feb 15', price: 1790 },
       { date: 'Feb 20', price: 1800 },
     ],
+    aiPrediction: {
+      nextWeekPrice: 1790,
+      confidence: 65,
+      bestDayToSell: 'Feb 25',
+      recommendation: 'Market stabilizing. Monitor for opportunities.',
+    },
   },
 ];
 

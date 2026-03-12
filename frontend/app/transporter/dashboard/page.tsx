@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { StatCard } from '@/components/dashboard/stat-card';
 import { Button } from '@/components/ui/button';
@@ -7,10 +8,13 @@ import { Badge } from '@/components/ui/badge';
 import { Truck, Package, DollarSign, Star, MapPin, Calendar, Navigation } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { mockTransportRequests } from '@/lib/mock-data/transport-requests';
-import { useState, useEffect } from 'react';
+import { LocalStorage } from '@/lib/localStorage';
 import DeliveryTracking from '@/components/tracking/DeliveryTracking';
 import TrackingStatusBar, { TrackingStatus } from '@/components/tracking/TrackingStatusBar';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useAuth } from '@/lib/auth';
+import { toast } from 'sonner';
+import Link from 'next/link';
 
 const earningsData = [
   { month: 'Jan', earnings: 45000 },
@@ -22,8 +26,14 @@ const earningsData = [
 ];
 
 export default function TransporterDashboardPage() {
-  useNotifications('t1', 'transporter');
+  const { user } = useAuth();
+  useNotifications(user?.id || 't1', 'transporter');
   const [acceptedJobs, setAcceptedJobs] = useState<any[]>([]);
+
+  // Filter active deliveries (in transit or picked up)
+  const activeDeliveries = mockTransportRequests.filter(req => 
+    req.status === 'in_transit' || req.status === 'picked_up'
+  );
 
   // Mock tracking data for deliveries
   const mockTrackingData: Record<string, { history: TrackingStatus[], transporter: any }> = {
@@ -64,7 +74,7 @@ export default function TransporterDashboardPage() {
 
   useEffect(() => {
     // Load accepted jobs from localStorage
-    const storedJobs = JSON.parse(localStorage.getItem('acceptedJobs') || '[]');
+    const storedJobs = LocalStorage.getAcceptedJobs();
     setAcceptedJobs(storedJobs);
   }, []);
 
@@ -123,7 +133,7 @@ export default function TransporterDashboardPage() {
             <h3 className="text-xl font-semibold text-slate-900">Monthly Earnings</h3>
             <p className="text-sm text-slate-600">Last 6 months performance</p>
           </div>
-          <Button variant="outline" size="sm">Download Report</Button>
+          <Button variant="outline" size="sm" asChild><Link href="/transporter/earnings">View Details</Link></Button>
         </div>
         <ResponsiveContainer width="100%" height={250}>
           <BarChart data={earningsData}>
@@ -148,7 +158,7 @@ export default function TransporterDashboardPage() {
         <Card className="p-6 bg-white/80 backdrop-blur-md border border-green-100 shadow-lg rounded-2xl">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-semibold text-slate-900">Active Deliveries</h3>
-            <Button variant="link" size="sm">View All</Button>
+            <Button variant="link" size="sm" asChild><Link href="/transporter/my-deliveries">View All</Link></Button>
           </div>
           <div className="space-y-6">
             {activeDeliveries.slice(0, 2).map((delivery) => (
@@ -172,7 +182,7 @@ export default function TransporterDashboardPage() {
         <Card className="p-6 bg-white/80 backdrop-blur-md border border-green-100 shadow-lg rounded-2xl">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-semibold text-slate-900">Available Jobs</h3>
-            <Button variant="link" size="sm">Browse All</Button>
+            <Button variant="link" size="sm" asChild><Link href="/transporter/available-jobs">Browse All</Link></Button>
           </div>
           <div className="space-y-3">
             {mockTransportRequests.filter(r => r.status === 'pending').slice(0, 4).map((job) => (
@@ -193,7 +203,7 @@ export default function TransporterDashboardPage() {
                     <span>{job.pickupDate}</span>
                   </div>
                 </div>
-                <Button size="sm" className="w-full mt-3 bg-green-600 hover:bg-green-700 text-white">Accept Job</Button>
+                <Button size="sm" className="w-full mt-3 bg-green-600 hover:bg-green-700 text-white" onClick={() => { toast.success('Job accepted successfully!'); }}>Accept Job</Button>
               </div>
             ))}
           </div>

@@ -16,30 +16,36 @@ import {
 import { Leaf, UserPlus } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { UserRole } from '@/lib/types/user';
+import { useAuth } from '@/lib/auth';
+import { toast } from 'sonner';
 
 export default function SignupPage() {
   const router = useRouter();
+  const { signup, isLoading } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState<UserRole>('farmer');
-  const [loading, setLoading] = useState(false);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
 
-    // Mock signup
-    setTimeout(() => {
-      const user = {
-        id: Date.now().toString(),
-        email,
-        name,
-        role,
-      };
+    if (password !== confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
 
-      localStorage.setItem('user', JSON.stringify(user));
+    if (password.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+
+    try {
+      await signup(name, email, password, role, phone);
+
+      toast.success('Account created successfully!');
 
       // Redirect based on role
       switch (role) {
@@ -52,11 +58,10 @@ export default function SignupPage() {
         case 'transporter':
           router.push('/transporter/dashboard');
           break;
-        case 'admin':
-          router.push('/admin/dashboard');
-          break;
       }
-    }, 1000);
+    } catch (error: any) {
+      toast.error(error.message || 'Signup failed. Please try again.');
+    }
   };
 
   return (
@@ -136,15 +141,29 @@ export default function SignupPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            minLength={6}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="confirmPassword">Confirm Password</Label>
+          <Input
+            id="confirmPassword"
+            type="password"
+            placeholder="••••••••"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            minLength={6}
           />
         </div>
 
         <Button
           type="submit"
           className="w-full bg-green-600 hover:bg-green-700 text-white rounded-xl shadow-md hover:shadow-lg transition-all"
-          disabled={loading}
+          disabled={isLoading}
         >
-          {loading ? (
+          {isLoading ? (
             'Creating account...'
           ) : (
             <>

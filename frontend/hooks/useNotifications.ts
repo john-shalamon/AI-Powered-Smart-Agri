@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useSocketEvent, useSocket } from '../lib/socket.tsx';
+import { useSocketEvent, useSocket } from '../lib/socket';
 import { toast } from 'sonner';
 
 export const useNotifications = (userId?: string, role?: string) => {

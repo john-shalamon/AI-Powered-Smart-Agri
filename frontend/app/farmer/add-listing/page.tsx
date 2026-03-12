@@ -19,6 +19,8 @@ import { Upload, Plus, X, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { mockCropListings } from '@/lib/mock-data/crops';
 import { CropListing } from '@/lib/types/crop';
+import { cropApi } from '@/lib/api.service';
+import { useAuth } from '@/lib/auth';
 
 interface UploadedImage {
   file: File;
@@ -28,6 +30,7 @@ interface UploadedImage {
 
 export default function AddListingPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -124,36 +127,51 @@ export default function AddListingPage() {
         return;
       }
 
-      // Create new listing
-      const newListing: CropListing = {
-        id: `c${Date.now()}`, // Simple ID generation
-        farmerId: 'f1', // Current farmer ID
-        farmerName: 'Ravi Kumar', // Current farmer name
-        farmerRating: 4.8, // Current farmer rating
-        cropName: formData.cropName,
-        category: formData.category,
-        quantity: parseFloat(formData.quantity),
-        unit: formData.unit as any,
-        quality: formData.quality as any,
-        pricePerUnit: parseFloat(formData.price),
-        harvestDate: new Date(formData.harvestDate),
-        location: {
-          lat: 28.6139, // Default location (Delhi)
-          lng: 77.2090,
-          address: formData.location,
-          city: 'Delhi', // Default city
-          state: 'Delhi', // Default state
-        },
-        images: uploadedImages.map(img => img.preview), // Use object URLs for now
-        description: formData.description,
-        status: 'active',
-        views: 0,
-        createdAt: new Date(),
-        expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days from now
-      };
-
-      // Add to mock data
-      mockCropListings.push(newListing);
+      // Try API first, fall back to mock
+      try {
+        const apiFormData = new FormData();
+        apiFormData.append('cropName', formData.cropName);
+        apiFormData.append('category', formData.category);
+        apiFormData.append('quantity', formData.quantity);
+        apiFormData.append('unit', formData.unit);
+        apiFormData.append('quality', formData.quality);
+        apiFormData.append('pricePerUnit', formData.price);
+        apiFormData.append('harvestDate', formData.harvestDate);
+        apiFormData.append('location', formData.location);
+        apiFormData.append('description', formData.description);
+        uploadedImages.forEach(img => apiFormData.append('images', img.file));
+        
+        await cropApi.create(apiFormData);
+      } catch {
+        // Fallback: add to mock data
+        const newListing: CropListing = {
+          id: `c${Date.now()}`,
+          farmerId: user?.id || 'f1',
+          farmerName: user?.name || 'Ravi Kumar',
+          farmerRating: 4.8,
+          cropName: formData.cropName,
+          category: formData.category,
+          quantity: parseFloat(formData.quantity),
+          unit: formData.unit as any,
+          quality: formData.quality as any,
+          pricePerUnit: parseFloat(formData.price),
+          harvestDate: new Date(formData.harvestDate),
+          location: {
+            lat: 28.6139,
+            lng: 77.2090,
+            address: formData.location,
+            city: 'Delhi',
+            state: 'Delhi',
+          },
+          images: uploadedImages.map(img => img.preview),
+          description: formData.description,
+          status: 'active',
+          views: 0,
+          createdAt: new Date(),
+          expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+        };
+        mockCropListings.push(newListing);
+      }
 
       toast.success('Listing created successfully!');
       router.push('/farmer/my-listings');

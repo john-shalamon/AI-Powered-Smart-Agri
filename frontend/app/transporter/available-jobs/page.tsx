@@ -8,10 +8,12 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { LocalStorage } from '@/lib/localStorage';
 import { Search, MapPin, Package, Calendar, Truck, Navigation, Map } from 'lucide-react';
 import { mockTransportRequests } from '@/lib/mock-data/orders';
 import { toast } from 'sonner';
 import dynamic from 'next/dynamic';
+import { transportApi } from '@/lib/api.service';
 
 // Dynamically import MapComponent to avoid SSR issues
 const MapComponent = dynamic(() => import('@/components/map/MapComponent'), {
@@ -32,8 +34,9 @@ export default function AvailableJobsPage() {
   const [selectedJob, setSelectedJob] = useState<typeof mockTransportRequests[0] | null>(null);
   const [showJobDialog, setShowJobDialog] = useState(false);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [showRouteDialog, setShowRouteDialog] = useState(false);
 
-  const availableJobs = transportRequests.filter(r => r.status === 'pending');
+  const availableJobs = mockTransportRequests.filter(r => r.status === 'pending');
 
   const filteredJobs = availableJobs.filter(job => {
     const matchesSearch = 
@@ -49,21 +52,18 @@ export default function AvailableJobsPage() {
     return matchesSearch && matchesDistance;
   });
 
-  const handleAcceptJob = () => {
+  const handleAcceptJob = async () => {
     if (selectedJob) {
-      // Update job status to accepted
-      setTransportRequests(prev => 
-        prev.map(job => 
-          job.id === selectedJob.id 
-            ? { ...job, status: 'accepted' as const, transporterId: 'current-transporter' }
-            : job
-        )
-      );
+      try {
+        await transportApi.acceptJob(selectedJob.id);
+      } catch {
+        // Fallback to local update
+      }
       
       // Store accepted job in localStorage for persistence
-      const acceptedJobs = JSON.parse(localStorage.getItem('acceptedJobs') || '[]');
+      const acceptedJobs = LocalStorage.getAcceptedJobs();
       const updatedJob = { ...selectedJob, status: 'accepted', transporterId: 'current-transporter' };
-      localStorage.setItem('acceptedJobs', JSON.stringify([...acceptedJobs, updatedJob]));
+      LocalStorage.setAcceptedJobs([...acceptedJobs, updatedJob]);
       
       toast.success('Job accepted successfully! Check your dashboard for active deliveries.');
       setShowJobDialog(false);

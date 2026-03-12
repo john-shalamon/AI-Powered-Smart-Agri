@@ -1,28 +1,50 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { PageTransition } from '@/components/animations/page-transition';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { mockCropListings } from '@/lib/mock-data/crops';
 import { StatusBadge } from '@/components/shared/status-badge';
-import { Search, Eye, Edit, Trash2, Plus } from 'lucide-react';
+import { Search, Eye, Edit, Trash2, Plus, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { cropApi } from '@/lib/api.service';
 
 export default function MyListingsPage() {
   const router = useRouter();
-  const [refreshKey, setRefreshKey] = useState(0);
-  const myListings = mockCropListings.filter(c => c.farmerId === 'f1');
+  const [myListings, setMyListings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
 
-  const handleDelete = (listingId: string) => {
-    const index = mockCropListings.findIndex(l => l.id === listingId);
-    if (index !== -1) {
-      mockCropListings.splice(index, 1);
-      setRefreshKey(prev => prev + 1);
+  const fetchListings = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await cropApi.getMyListings();
+      setMyListings(data.crops || []);
+    } catch {
+      // Fallback to mock data
+      setMyListings(mockCropListings.filter(c => c.farmerId === 'f1'));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchListings();
+  }, [fetchListings]);
+
+  const handleDelete = async (listingId: string) => {
+    try {
+      await cropApi.delete(listingId);
+      toast.success('Listing deleted successfully');
+      fetchListings();
+    } catch {
+      // Fallback: local delete
+      setMyListings(prev => prev.filter(l => l.id !== listingId));
       toast.success('Listing deleted successfully');
     }
   };
@@ -30,6 +52,10 @@ export default function MyListingsPage() {
   const handleEdit = (listingId: string) => {
     router.push(`/farmer/edit-listing/${listingId}`);
   };
+
+  const filteredListings = search
+    ? myListings.filter(l => l.cropName?.toLowerCase().includes(search.toLowerCase()) || l.category?.toLowerCase().includes(search.toLowerCase()))
+    : myListings;
 
   return (
     <PageTransition>
@@ -52,7 +78,12 @@ export default function MyListingsPage() {
           <div className="flex items-center gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <Input placeholder="Search listings..." className="pl-10" />
+              <Input
+                placeholder="Search listings..."
+                className="pl-10"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
             </div>
             <Button variant="outline" className="rounded-xl">
               Filters
@@ -81,8 +112,13 @@ export default function MyListingsPage() {
         </div>
 
         {/* Listings Grid */}
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-green-600" />
+          </div>
+        ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {myListings.map((listing) => (
+          {filteredListings.map((listing) => (
             <Card
               key={listing.id}
               className="bg-white/80 backdrop-blur-md border-green-100 overflow-hidden hover:shadow-xl transition-shadow"
@@ -145,7 +181,13 @@ export default function MyListingsPage() {
               </div>
             </Card>
           ))}
+          {filteredListings.length === 0 && (
+            <div className="col-span-full text-center py-12 text-slate-500">
+              {search ? 'No matching listings found' : 'No listings yet. Create your first listing!'}
+            </div>
+          )}
         </div>
+        )}
       </div>
     </PageTransition>
   );

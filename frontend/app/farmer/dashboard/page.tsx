@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { PackageOpen, TrendingUp, ShoppingCart, IndianRupee } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/stat-card';
 import { AIInsightCard } from '@/components/dashboard/ai-insight-card';
@@ -11,6 +12,9 @@ import Link from 'next/link';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useNotifications } from '@/hooks/useNotifications';
+import { WeatherWidget } from '@/components/dashboard/weather-widget';
+import { useAuth } from '@/lib/auth';
+import { cropApi, orderApi } from '@/lib/api.service';
 
 const priceData = [
   { date: 'Feb 1', price: 2380 },
@@ -21,16 +25,33 @@ const priceData = [
 ];
 
 export default function FarmerDashboard() {
-  // Enable real-time notifications for farmer role
-  useNotifications('f1', 'farmer');
+  const { user } = useAuth();
+  useNotifications(user?.id || 'f1', 'farmer');
 
-  const activeListings = mockCropListings.filter(c => c.farmerId === 'f1' && c.status === 'active');
+  const [myListings, setMyListings] = useState<any[]>([]);
+  const [pendingOrders, setPendingOrders] = useState(0);
+
+  useEffect(() => {
+    cropApi.getMyListings().then((data: any) => {
+      setMyListings(data.crops || data || []);
+    }).catch(() => {
+      setMyListings(mockCropListings.filter(c => c.farmerId === 'f1'));
+    });
+    orderApi.getAll().then((data: any) => {
+      const orders = data.orders || data || [];
+      setPendingOrders(orders.filter((o: any) => o.status === 'pending').length);
+    }).catch(() => setPendingOrders(3));
+  }, []);
+
+  const activeListings = myListings.length > 0
+    ? myListings.filter((c: any) => c.status === 'active')
+    : mockCropListings.filter(c => c.farmerId === 'f1' && c.status === 'active');
 
   return (
     <div className="p-6 space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-slate-900 text-balance">Welcome back, Ravi!</h1>
+        <h1 className="text-3xl font-bold text-slate-900 text-balance">Welcome back, {user?.name || 'Ravi'}!</h1>
         <p className="text-slate-600 mt-1">{"Here's what's happening with your farm today"}</p>
       </div>
 
@@ -50,7 +71,7 @@ export default function FarmerDashboard() {
         />
         <StatCard
           title="Pending Orders"
-          value={3}
+          value={pendingOrders}
           icon={ShoppingCart}
           subtitle="Awaiting action"
         />
@@ -63,11 +84,16 @@ export default function FarmerDashboard() {
         />
       </div>
 
-      {/* AI Insights */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {mockAIInsights.slice(0, 2).map((insight) => (
-          <AIInsightCard key={insight.id} insight={insight} />
-        ))}
+      {/* AI Insights & Weather */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          {mockAIInsights.slice(0, 2).map((insight) => (
+            <AIInsightCard key={insight.id} insight={insight} />
+          ))}
+        </div>
+        <div>
+          <WeatherWidget city={user?.location || 'Delhi'} compact={false} />
+        </div>
       </div>
 
       {/* Market Price Trend */}

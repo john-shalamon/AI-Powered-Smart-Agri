@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { StatCard } from '@/components/dashboard/stat-card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,9 @@ import { mockBuyers } from '@/lib/mock-data/buyers';
 import { mockOrders } from '@/lib/mock-data/orders';
 import { mockCropListings } from '@/lib/mock-data/crops';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useAuth } from '@/lib/auth';
+import { adminApi } from '@/lib/api.service';
+import Link from 'next/link';
 
 const monthlyData = [
   { month: 'Jan', orders: 120, revenue: 450000 },
@@ -28,9 +32,17 @@ const userDistribution = [
 ];
 
 export default function AdminDashboardPage() {
-  useNotifications('a1', 'admin');
-  const totalUsers = mockFarmers.length + mockBuyers.length + 4;
-  const activeOrders = mockOrders.filter(o => ['pending', 'confirmed', 'in_transit'].includes(o.status)).length;
+  const { user } = useAuth();
+  useNotifications(user?.id || 'a1', 'admin');
+
+  const [dashboardData, setDashboardData] = useState<any>(null);
+
+  useEffect(() => {
+    adminApi.getDashboard().then((data: any) => setDashboardData(data)).catch(() => {});
+  }, []);
+
+  const totalUsers = dashboardData?.totalUsers || (mockFarmers.length + mockBuyers.length + 4);
+  const activeOrders = dashboardData?.activeOrders || mockOrders.filter(o => ['pending', 'confirmed', 'in_transit'].includes(o.status)).length;
   const totalRevenue = monthlyData.reduce((sum, m) => sum + m.revenue, 0);
   const availableCrops = mockCropListings.filter(c => c.status === 'active').length;
 
@@ -136,10 +148,7 @@ export default function AdminDashboardPage() {
         <Card className="p-6 bg-white/80 backdrop-blur-md border border-green-100 shadow-lg rounded-2xl">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-semibold text-slate-900">Recent Orders</h3>
-            <Button variant="link" size="sm">View All</Button>
-          </div>
-          <div className="space-y-3">
-            {mockOrders.slice(0, 5).map((order) => (
+            <Button variant="link" size="sm" asChild><Link href="/admin/crops-orders">View All</Link></Button>
               <div key={order.id} className="flex items-center justify-between p-3 rounded-xl bg-green-50/50 hover:bg-green-50 transition-colors border border-green-100">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
@@ -165,10 +174,7 @@ export default function AdminDashboardPage() {
         <Card className="p-6 bg-white/80 backdrop-blur-md border border-green-100 shadow-lg rounded-2xl">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-semibold text-slate-900">System Alerts</h3>
-            <Button variant="link" size="sm">View All</Button>
-          </div>
-          <div className="space-y-3">
-            <div className="flex items-start gap-3 p-3 rounded-xl bg-yellow-50 border border-yellow-200">
+            <Button variant="link" size="sm" asChild><Link href="/admin/reports">View All</Link></Button>
               <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 shrink-0" />
               <div className="flex-1">
                 <p className="font-medium text-slate-900 text-sm">Payment Pending</p>

@@ -36,7 +36,7 @@ export default function BuyerProfilePage() {
                 <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center text-3xl">
                   🏢
                 </div>
-                <Button variant="outline">Change Photo</Button>
+                <Button variant="outline" onClick={() => toast.info('Photo upload feature coming soon!')}>Change Photo</Button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -139,7 +139,7 @@ export default function BuyerProfilePage() {
                         <p className="text-sm text-muted-foreground">freshmart@upi</p>
                       </div>
                     </div>
-                    <Button variant="outline" size="sm">Edit</Button>
+                    <Button variant="outline" size="sm" onClick={() => toast.info('Edit payment method feature coming soon!')}>Edit</Button>
                   </div>
                   <div className="flex items-center justify-between p-4 rounded-lg bg-secondary/30">
                     <div className="flex items-center gap-3">
@@ -149,7 +149,7 @@ export default function BuyerProfilePage() {
                         <p className="text-sm text-muted-foreground">30 days</p>
                       </div>
                     </div>
-                    <Button variant="outline" size="sm">Edit</Button>
+                    <Button variant="outline" size="sm" onClick={() => toast.info('Edit credit period feature coming soon!')}>Edit</Button>
                   </div>
                 </div>
               </div>

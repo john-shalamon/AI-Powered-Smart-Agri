@@ -10,24 +10,38 @@ import { Button } from '@/components/ui/button';
 import { useSocket } from '@/lib/socket.tsx';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { orderApi } from '@/lib/api.service';
+import { useAuth } from '@/lib/auth';
 
 export default function FarmerOrdersPage() {
+  const { user } = useAuth();
   const [orders, setOrders] = useState(mockOrders.filter(o => o.farmerId === 'f1'));
   const [selectedOrder, setSelectedOrder] = useState<typeof mockOrders[0] | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const { socket, joinUser } = useSocket();
 
   useEffect(() => {
-    // Join user room for real-time updates
+    // Fetch from API
+    orderApi.getAll().then((data: any) => {
+      const apiOrders = data.orders || data || [];
+      if (apiOrders.length > 0) {
+        setOrders(apiOrders);
+      }
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const userId = user?.id || 'f1';
     try {
-      joinUser('f1'); // In real app, get from auth context
+      joinUser(userId);
     } catch (error) {
       console.error('Socket connection error:', error);
     }
 
     // Listen for order status changes
     const handleOrderUpdate = (data: any) => {
-      if (data.farmerId === 'f1') {
+      const userId = user?.id || 'f1';
+      if (data.farmerId === userId) {
         setOrders(prev => prev.map(order =>
           order.id === data.orderId ? { ...order, status: data.status } : order
         ));

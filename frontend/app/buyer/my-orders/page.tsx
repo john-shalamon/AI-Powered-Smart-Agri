@@ -1,18 +1,31 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TrackingStatusBar } from '@/components/tracking/TrackingStatusBar';
+import TrackingStatusBar, { TrackingStatus } from '@/components/tracking/TrackingStatusBar';
+import { StatusBadge } from '@/components/shared/status-badge';
+import { MapPin, Phone, Package } from 'lucide-react';
 import { mockOrders } from '@/lib/mock-data/orders';
 import { mockCropListings } from '@/lib/mock-data/crops';
 import { mockFarmers } from '@/lib/mock-data/farmers';
-import TrackingStatusBar, { TrackingStatus } from '@/components/tracking/TrackingStatusBar';
+import { orderApi } from '@/lib/api.service';
+import { useAuth } from '@/lib/auth';
 
 export default function MyOrdersPage() {
-  const buyerOrders = mockOrders.filter(o => o.buyerId === 'b1');
+  const { user } = useAuth();
+  const [buyerOrders, setBuyerOrders] = useState(mockOrders.filter(o => o.buyerId === 'b1'));
+
+  useEffect(() => {
+    orderApi.getAll().then((data: any) => {
+      const apiOrders = data.orders || data || [];
+      if (apiOrders.length > 0) {
+        setBuyerOrders(apiOrders);
+      }
+    }).catch(() => {})
+  }, []);
 
   // Mock tracking data for orders
   const mockTrackingData: Record<string, { history: TrackingStatus[], transporter: any }> = {
@@ -74,7 +87,7 @@ export default function MyOrdersPage() {
                 <p className="text-xs text-muted-foreground">Order #{order.id.slice(-8)}</p>
               </div>
             </div>
-            <StatusBadge status={order.status} type="order" />
+            <StatusBadge status={order.status} />
           </div>
 
           {/* Order Details */}
@@ -89,7 +102,7 @@ export default function MyOrdersPage() {
             </div>
             <div>
               <p className="text-xs text-muted-foreground mb-1">Total Amount</p>
-              <p className="font-semibold text-primary">₹{order.totalAmount.toLocaleString()}</p>
+              <p className="font-semibold text-primary">₹{(order.totalAmount ?? 0).toLocaleString()}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground mb-1">Order Date</p>
@@ -106,7 +119,7 @@ export default function MyOrdersPage() {
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <MapPin className="w-4 h-4" />
-                <span>{order.pickupLocation.address}, {order.pickupLocation.city}</span>
+                <span>{order.pickupLocation?.address || 'Unknown address'}{order.pickupLocation?.city ? `, ${order.pickupLocation.city}` : ''}</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Phone className="w-4 h-4" />
