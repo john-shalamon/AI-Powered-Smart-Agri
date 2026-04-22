@@ -8,6 +8,7 @@ router.use(authenticate, authorize('admin'));
 
 router.get('/dashboard', adminController.getDashboardStats);
 router.get('/users', adminController.getAllUsers);
+router.post('/users', adminController.createUser);
 router.put('/users/:id/toggle-status', adminController.toggleUserStatus);
 router.get('/analytics', adminController.getAnalytics);
 router.get('/crops-orders', adminController.getCropsAndOrders);

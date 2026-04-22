@@ -200,6 +200,9 @@ export const adminApi = {
   getUsers: (params?: { page?: string; limit?: string; role?: string; search?: string }) =>
     api.get<{ users: any[]; totalPages: number; currentPage: number; total: number }>('/api/admin/users', params as any),
 
+  createUser: (data: { name: string; email: string; password: string; role: string; phone?: string }) =>
+    api.post<{ user: any }>('/api/admin/users', data),
+
   toggleUserStatus: (id: string) => api.put<any>(`/api/admin/users/${encodeURIComponent(id)}/toggle-status`),
 
   getAnalytics: (params?: { period?: string }) =>

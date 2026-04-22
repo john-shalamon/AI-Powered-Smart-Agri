@@ -1,3 +1,5 @@
+const bcrypt = require('bcryptjs');
+const { v4: uuidv4 } = require('uuid');
 const { users, sanitizeUser } = require('./auth.controller');
 const { cropListings } = require('./crop.controller');
 const { orders } = require('./order.controller');
@@ -262,9 +264,81 @@ const getReportData = (req, res) => {
   }
 };
 
+// Create new user (admin can create any role including admin)
+const createUser = async (req, res) => {
+  try {
+    const { name, email, password, role, phone } = req.body;
+
+    if (!name || !email || !password || !role) {
+      return res.status(400).json({ error: 'name, email, password and role are required' });
+    }
+
+    const validRoles = ['farmer', 'buyer', 'transporter', 'admin'];
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({ error: `role must be one of: ${validRoles.join(', ')}` });
+    }
+
+    const existingUser = users.find(u => u.email === email);
+    if (existingUser) {
+      return res.status(400).json({ error: 'User with this email already exists' });
+    }
+
+    const salt = await bcrypt.genSalt(12);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const newUser = {
+      _id: uuidv4(),
+      name,
+      email,
+      password: hashedPassword,
+      role,
+      phone: phone || '',
+      address: {},
+      rating: 0,
+      isVerified: false,
+      isActive: true,
+      createdAt: new Date(),
+      avatar: '',
+    };
+
+    if (role === 'farmer') {
+      newUser.farmLocation = {};
+      newUser.cropTypes = [];
+      newUser.farmSize = 0;
+      newUser.totalSales = 0;
+    } else if (role === 'buyer') {
+      newUser.businessName = '';
+      newUser.businessType = 'retailer';
+      newUser.location = {};
+      newUser.totalPurchases = 0;
+    } else if (role === 'transporter') {
+      newUser.vehicleType = 'truck';
+      newUser.vehicleNumber = '';
+      newUser.capacity = 0;
+      newUser.licenseNumber = '';
+      newUser.totalDeliveries = 0;
+      newUser.availability = true;
+    } else if (role === 'admin') {
+      newUser.permissions = ['manage_users', 'manage_orders', 'manage_crops', 'view_analytics', 'manage_settings'];
+    }
+
+    users.push(newUser);
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to('role_admin').emit('user-created', { user: sanitizeUser(newUser) });
+    }
+
+    res.status(201).json({ user: sanitizeUser(newUser) });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   getDashboardStats,
   getAllUsers,
+  createUser,
   toggleUserStatus,
   getAnalytics,
   getCropsAndOrders,
