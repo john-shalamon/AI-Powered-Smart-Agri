@@ -2,6 +2,8 @@ const { users, sanitizeUser } = require('./auth.controller');
 const { cropListings } = require('./crop.controller');
 const { orders } = require('./order.controller');
 const { transportRequests, deliveries } = require('./transport.controller');
+const bcrypt = require('bcryptjs');
+const { v4: uuidv4 } = require('uuid');
 
 // Get dashboard stats
 const getDashboardStats = (req, res) => {
@@ -94,9 +96,71 @@ const getAllUsers = (req, res) => {
   }
 };
 
-// Toggle user status
-const toggleUserStatus = (req, res) => {
+// Create user (admin)
+const createUser = async (req, res) => {
   try {
+    const { name, email, password, role, phone } = req.body;
+
+    const existingUser = users.find(u => u.email === email);
+    if (existingUser) {
+      return res.status(400).json({ error: 'User with this email already exists' });
+    }
+
+    const salt = await bcrypt.genSalt(12);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const newUser = {
+      _id: uuidv4(),
+      name,
+      email,
+      password: hashedPassword,
+      role,
+      phone: phone || '',
+      address: {},
+      rating: 0,
+      isVerified: true,
+      isActive: true,
+      createdAt: new Date(),
+      avatar: '',
+    };
+
+    if (role === 'farmer') {
+      newUser.farmLocation = {};
+      newUser.cropTypes = [];
+      newUser.farmSize = 0;
+      newUser.totalSales = 0;
+    } else if (role === 'buyer') {
+      newUser.businessName = '';
+      newUser.businessType = 'retailer';
+      newUser.location = {};
+      newUser.totalPurchases = 0;
+    } else if (role === 'transporter') {
+      newUser.vehicleType = 'truck';
+      newUser.vehicleNumber = '';
+      newUser.capacity = 0;
+      newUser.licenseNumber = '';
+      newUser.totalDeliveries = 0;
+      newUser.availability = true;
+    }
+
+    users.push(newUser);
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to('role_admin').emit('user-created', { user: sanitizeUser(newUser) });
+    }
+
+    res.status(201).json({
+      user: sanitizeUser(newUser),
+      credentials: { email, password },
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Toggle user status
+const toggleUserStatus = (req, res) => {  try {
     const userIndex = users.findIndex(u => u._id === req.params.id);
     if (userIndex === -1) return res.status(404).json({ error: 'User not found' });
 
@@ -265,6 +329,7 @@ const getReportData = (req, res) => {
 module.exports = {
   getDashboardStats,
   getAllUsers,
+  createUser,
   toggleUserStatus,
   getAnalytics,
   getCropsAndOrders,
