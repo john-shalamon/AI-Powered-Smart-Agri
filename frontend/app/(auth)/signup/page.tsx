@@ -58,6 +58,9 @@ export default function SignupPage() {
         case 'transporter':
           router.push('/transporter/dashboard');
           break;
+        case 'admin':
+          router.push('/admin/dashboard');
+          break;
       }
     } catch (error: any) {
       toast.error(error.message || 'Signup failed. Please try again.');
