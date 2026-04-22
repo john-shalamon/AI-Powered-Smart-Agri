@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useRef } from 'react';
 import { PageTransition } from '@/components/animations/page-transition';
 import { useDiseaseDetection } from '@/hooks/useAI';
 import { Card } from '@/components/ui/card';
@@ -62,6 +62,18 @@ export default function DiseaseDetectionPage() {
                 </Button>
               </div> 
             </div>
+
+            {jobId && status && (
+              <p className="mt-4 text-sm text-slate-600">
+                Job <span className="font-semibold text-slate-800">{jobId.slice(0, 8)}</span> is <span className="font-semibold capitalize">{status}</span>
+              </p>
+            )}
+
+            {error && (
+              <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {error}
+              </div>
+            )}
 
             {isLoading && (
               <div className="mt-8 p-6 bg-green-50 rounded-xl">

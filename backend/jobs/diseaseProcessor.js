@@ -2,6 +2,26 @@ const axios = require('axios');
 const fs = require('fs');
 const { getJob, updateJob } = require('../store/jobStore');
 
+function extractJsonObject(text) {
+  if (!text || typeof text !== 'string') return null;
+  const fencedMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  const candidate = fencedMatch ? fencedMatch[1] : text;
+  try {
+    return JSON.parse(candidate);
+  } catch (_err) {
+    const firstBrace = text.indexOf('{');
+    const lastBrace = text.lastIndexOf('}');
+    if (firstBrace >= 0 && lastBrace > firstBrace) {
+      try {
+        return JSON.parse(text.slice(firstBrace, lastBrace + 1));
+      } catch (_err2) {
+        return null;
+      }
+    }
+    return null;
+  }
+}
+
 // Simple in-process queue for MVP
 const queue = [];
 let running = false;
@@ -36,8 +56,7 @@ async function _infer(filePath) {
   const providerUrl = process.env.AI_PROVIDER_URL;
   const apiKey = process.env.AI_PROVIDER_API_KEY;
 
-  if (providerUrl && apiKey) {
-    if (!filePath) throw new Error('Image file required for AI processing');
+  if (providerUrl && apiKey && filePath) {
     try {
       const imageBuffer = fs.readFileSync(filePath);
       const base64 = imageBuffer.toString('base64');
@@ -62,7 +81,9 @@ async function _infer(filePath) {
         timeout: 20000,
       });
       const content = resp.data.choices[0].message.content;
-      return JSON.parse(content);
+      const parsed = extractJsonObject(content);
+      if (parsed) return parsed;
+      throw new Error('Provider response is not valid JSON');
     } catch (err) {
       // Fall through to mock if provider call fails
       // eslint-disable-next-line no-console
@@ -73,6 +94,8 @@ async function _infer(filePath) {
   // Mock inference (MVP)
   await new Promise((r) => setTimeout(r, 1200));
   return {
+    cropName: 'Tomato',
+    imageUrl: '/placeholder.svg?height=400&width=400',
     detectedDisease: 'Late Blight (mock)',
     confidence: 90,
     severity: 'high',
@@ -83,6 +106,7 @@ async function _infer(filePath) {
       preventive: ['Crop rotation', 'Avoid overhead irrigation'],
     },
     yieldImpact: { current: 35, withTreatment: 15, withoutTreatment: 60 },
+    detectedAt: new Date().toISOString(),
   };
 }
 

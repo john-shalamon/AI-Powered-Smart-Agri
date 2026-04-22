@@ -29,7 +29,7 @@ export default function FarmerOrdersPage() {
             <p className="text-sm text-slate-600 mt-1">Confirmed</p>
           </Card>
           <Card className="bg-white/80 backdrop-blur-md border-green-100 p-4 text-center">
-            <p className="text-2xl font-bold text-purple-600">{farmerOrders.filter(o => o.status === 'in-transit').length}</p>
+            <p className="text-2xl font-bold text-purple-600">{farmerOrders.filter(o => o.status === 'in_transit').length}</p>
             <p className="text-sm text-slate-600 mt-1">In Transit</p>
           </Card>
           <Card className="bg-white/80 backdrop-blur-md border-green-100 p-4 text-center">
@@ -48,7 +48,7 @@ export default function FarmerOrdersPage() {
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                 <div className="flex items-center gap-4">
                   <img
-                    src={order.cropImage}
+                    src={'/placeholder.svg?height=200&width=200'}
                     alt={order.cropName}
                     className="w-20 h-20 rounded-xl object-cover"
                   />
@@ -80,9 +80,9 @@ export default function FarmerOrdersPage() {
                 <div className="flex items-start gap-3">
                   <Calendar className="w-5 h-5 text-green-600 mt-0.5" />
                   <div>
-                    <p className="text-xs text-slate-500">Estimated Delivery</p>
+                    <p className="text-xs text-slate-500">Created</p>
                     <p className="font-medium text-slate-900">
-                      {order.estimatedDelivery ? new Date(order.estimatedDelivery).toLocaleDateString() : 'TBD'}
+                      {new Date(order.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
@@ -91,7 +91,7 @@ export default function FarmerOrdersPage() {
               <div className="flex items-center justify-between pt-4 border-t border-green-100">
                 <div>
                   <p className="text-sm text-slate-600">Total Amount</p>
-                  <p className="text-2xl font-bold text-green-600">₹{order.totalPrice.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-green-600">₹{Number(order.totalAmount).toLocaleString()}</p>
                 </div>
                 <div className="flex gap-2">
                   {order.status === 'pending' && (
@@ -124,12 +124,9 @@ export default function FarmerOrdersPage() {
                           <div className="flex items-center justify-between">
                             <StatusBadge status={event.status} variant="sm" />
                             <span className="text-xs text-slate-500">
-                              {new Date(event.timestamp).toLocaleString()}
+                              {event.timestamp ? new Date(event.timestamp).toLocaleString() : 'Pending'}
                             </span>
                           </div>
-                          {event.note && (
-                            <p className="text-slate-600 mt-1">{event.note}</p>
-                          )}
                         </div>
                       </div>
                     ))}

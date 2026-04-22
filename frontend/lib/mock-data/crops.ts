@@ -287,3 +287,6 @@ export const mockMarketPrices: MarketPrice[] = [
     },
   },
 ];
+
+// Backward-compatible alias used by existing pages.
+export const mockCrops = mockCropListings;

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, MoreVertical, UserCheck, UserX } from 'lucide-react';
+import { Search, MoreVertical } from 'lucide-react';
 import { mockFarmers } from '@/lib/mock-data/farmers';
 import { mockBuyers } from '@/lib/mock-data/buyers';
 import { mockTransporters } from '@/lib/mock-data/transporters';
@@ -79,17 +79,17 @@ export default function UsersPage() {
                         </div>
                       </td>
                       <td className="p-4 text-sm text-muted-foreground">
-                        {farmer.location.district}, {farmer.location.state}
+                        {farmer.farmLocation.city}, {farmer.farmLocation.state}
                       </td>
                       <td className="p-4 text-sm text-foreground">{farmer.farmSize} acres</td>
                       <td className="p-4">
                         <div className="flex flex-wrap gap-1">
-                          {farmer.crops.slice(0, 2).map((crop, i) => (
+                          {farmer.cropTypes.slice(0, 2).map((crop, i) => (
                             <Badge key={i} variant="secondary" className="text-xs">{crop}</Badge>
                           ))}
                         </div>
                       </td>
-                      <td className="p-4 text-sm font-medium text-foreground">{farmer.rating.average}</td>
+                      <td className="p-4 text-sm font-medium text-foreground">{farmer.rating.toFixed(1)}</td>
                       <td className="p-4">
                         <Badge variant="default">Active</Badge>
                       </td>
@@ -135,7 +135,7 @@ export default function UsersPage() {
                       <td className="p-4 text-sm text-muted-foreground">
                         {buyer.location.city}, {buyer.location.state}
                       </td>
-                      <td className="p-4 text-sm text-foreground">{buyer.totalOrders}</td>
+                      <td className="p-4 text-sm text-foreground">₹{buyer.totalPurchases.toLocaleString()}</td>
                       <td className="p-4">
                         <Badge variant="default">Active</Badge>
                       </td>
@@ -180,10 +180,10 @@ export default function UsersPage() {
                       </td>
                       <td className="p-4 text-sm text-foreground">{transporter.vehicleType}</td>
                       <td className="p-4 text-sm text-muted-foreground">
-                        {transporter.location.city}, {transporter.location.state}
+                        {transporter.currentLocation.lat.toFixed(2)}, {transporter.currentLocation.lng.toFixed(2)}
                       </td>
-                      <td className="p-4 text-sm font-medium text-foreground">{transporter.rating.average}</td>
-                      <td className="p-4 text-sm text-foreground">{transporter.totalTrips}</td>
+                      <td className="p-4 text-sm font-medium text-foreground">{transporter.rating.toFixed(1)}</td>
+                      <td className="p-4 text-sm text-foreground">{transporter.totalDeliveries}</td>
                       <td className="p-4">
                         <Badge variant="default">Active</Badge>
                       </td>
