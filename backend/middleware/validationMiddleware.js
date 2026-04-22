@@ -65,6 +65,13 @@ const userRegistrationSchema = {
   role: { required: true, type: 'string', enum: ['farmer', 'buyer', 'transporter'] },
 };
 
+const adminCreateUserSchema = {
+  name: { required: true, type: 'string', minLength: 2, maxLength: 100 },
+  email: { required: true, type: 'email' },
+  password: { required: true, type: 'string', minLength: 6 },
+  role: { required: true, type: 'string', enum: ['farmer', 'buyer', 'transporter', 'admin'] },
+};
+
 const userLoginSchema = {
   email: { required: true, type: 'email' },
   password: { required: true, type: 'string', minLength: 1 },
@@ -87,6 +94,7 @@ module.exports = {
   validate,
   userRegistrationSchema,
   userLoginSchema,
+  adminCreateUserSchema,
   cropListingSchema,
   orderSchema,
 };

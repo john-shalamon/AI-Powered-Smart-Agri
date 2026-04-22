@@ -7,14 +7,241 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Users, Package, Truck, TrendingUp, AlertCircle, CheckCircle } from 'lucide-react';
 import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { mockFarmers } from '@/lib/mock-data/farmers';
-import { mockBuyers } from '@/lib/mock-data/buyers';
-import { mockOrders } from '@/lib/mock-data/orders';
-import { mockCropListings } from '@/lib/mock-data/crops';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useAuth } from '@/lib/auth';
 import { adminApi } from '@/lib/api.service';
 import Link from 'next/link';
+
+const ROLE_COLORS: Record<string, string> = {
+  Farmers: '#16a34a',
+  Buyers: '#3b82f6',
+  Transporters: '#8b5cf6',
+};
+
+export default function AdminDashboardPage() {
+  const { user } = useAuth();
+  useNotifications(user?.id || 'a1', 'admin');
+
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    adminApi.getDashboard()
+      .then((data: any) => setDashboardData(data))
+      .catch(() => {})
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  const totalUsers = dashboardData?.totalUsers ?? '—';
+  const totalOrders = dashboardData?.totalOrders ?? '—';
+  const totalRevenue = dashboardData?.totalRevenue ?? 0;
+  const activeCrops = dashboardData?.activeCrops ?? '—';
+
+  const userDistribution = dashboardData?.usersByRole
+    ? [
+        { name: 'Farmers', value: dashboardData.usersByRole.farmers, color: ROLE_COLORS.Farmers },
+        { name: 'Buyers', value: dashboardData.usersByRole.buyers, color: ROLE_COLORS.Buyers },
+        { name: 'Transporters', value: dashboardData.usersByRole.transporters, color: ROLE_COLORS.Transporters },
+      ]
+    : [];
+
+  const monthlyData = dashboardData?.monthlyRevenue ?? [];
+  const recentOrders = dashboardData?.recentOrders ?? [];
+
+  return (
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold text-slate-900">Admin Dashboard</h1>
+        <p className="text-slate-600">Platform overview and management</p>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          title="Total Users"
+          value={isLoading ? '…' : String(totalUsers)}
+          icon={Users}
+          trend={{ value: 12, isPositive: true }}
+          subtitle="Active users"
+        />
+        <StatCard
+          title="Total Orders"
+          value={isLoading ? '…' : String(totalOrders)}
+          icon={Package}
+          trend={{ value: 8, isPositive: true }}
+          subtitle="All orders"
+        />
+        <StatCard
+          title="Total Revenue"
+          value={isLoading ? '…' : `₹${(totalRevenue / 100000).toFixed(1)}L`}
+          icon={TrendingUp}
+          trend={{ value: 15, isPositive: true }}
+          subtitle="Delivered orders"
+        />
+        <StatCard
+          title="Active Crops"
+          value={isLoading ? '…' : String(activeCrops)}
+          icon={Truck}
+          subtitle="Listed for sale"
+        />
+      </div>
+
+      {/* Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Revenue & Orders Trend */}
+        <Card className="p-6 bg-white/80 backdrop-blur-md border border-green-100 shadow-lg rounded-2xl">
+          <div className="mb-6">
+            <h3 className="text-xl font-semibold text-slate-900">Monthly Revenue & Orders</h3>
+            <p className="text-sm text-slate-600">Orders and revenue trends</p>
+          </div>
+          {monthlyData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={monthlyData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis dataKey="month" stroke="#64748b" />
+                <YAxis stroke="#64748b" />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#fff',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '12px',
+                  }}
+                />
+                <Legend />
+                <Line type="monotone" dataKey="orders" stroke="#16a34a" strokeWidth={2} name="Orders" />
+                <Line type="monotone" dataKey="revenue" stroke="#3b82f6" strokeWidth={2} name="Revenue (₹)" />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-[250px] text-muted-foreground">
+              {isLoading ? 'Loading chart…' : 'No data yet'}
+            </div>
+          )}
+        </Card>
+
+        {/* User Distribution */}
+        <Card className="p-6 bg-white/80 backdrop-blur-md border border-green-100 shadow-lg rounded-2xl">
+          <div className="mb-6">
+            <h3 className="text-xl font-semibold text-slate-900">User Distribution</h3>
+            <p className="text-sm text-slate-600">Platform user breakdown</p>
+          </div>
+          {userDistribution.length > 0 ? (
+            <div className="flex items-center justify-center">
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={userDistribution}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {userDistribution.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-[250px] text-muted-foreground">
+              {isLoading ? 'Loading chart…' : 'No data yet'}
+            </div>
+          )}
+        </Card>
+      </div>
+
+      {/* Recent Activity & System Alerts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Recent Orders */}
+        <Card className="p-6 bg-white/80 backdrop-blur-md border border-green-100 shadow-lg rounded-2xl">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-semibold text-slate-900">Recent Orders</h3>
+            <Button variant="link" size="sm" asChild><Link href="/admin/crops-orders">View All</Link></Button>
+          </div>
+          <div className="space-y-3">
+            {recentOrders.length > 0 ? recentOrders.slice(0, 5).map((order: any) => (
+              <div key={order._id || order.id} className="flex items-center justify-between p-3 rounded-xl bg-green-50/50 hover:bg-green-50 transition-colors border border-green-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
+                    <Package className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-slate-900 text-sm">{order.cropName}</p>
+                    <p className="text-xs text-slate-500">#{order._id || order.id}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="font-semibold text-slate-900 text-sm">{'₹'}{(order.totalPrice || order.totalAmount || 0).toLocaleString()}</p>
+                  <Badge variant="outline" className="text-xs">
+                    {(order.status || '').replace('_', ' ')}
+                  </Badge>
+                </div>
+              </div>
+            )) : (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                {isLoading ? 'Loading orders…' : 'No orders yet'}
+              </p>
+            )}
+          </div>
+        </Card>
+
+        {/* System Alerts */}
+        <Card className="p-6 bg-white/80 backdrop-blur-md border border-green-100 shadow-lg rounded-2xl">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-semibold text-slate-900">System Status</h3>
+            <Button variant="link" size="sm" asChild><Link href="/admin/reports">View Reports</Link></Button>
+          </div>
+          <div className="space-y-3">
+            {dashboardData?.ordersByStatus && (
+              <>
+                <div className="flex items-start gap-3 p-3 rounded-xl bg-yellow-50 border border-yellow-200">
+                  <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 shrink-0" />
+                  <div className="flex-1">
+                    <p className="font-medium text-slate-900 text-sm">Pending Orders</p>
+                    <p className="text-xs text-slate-500">{dashboardData.ordersByStatus.pending} orders awaiting confirmation</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 rounded-xl bg-blue-50 border border-blue-200">
+                  <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
+                  <div className="flex-1">
+                    <p className="font-medium text-slate-900 text-sm">In Transit</p>
+                    <p className="text-xs text-slate-500">{dashboardData.ordersByStatus.inTransit} deliveries in progress</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 rounded-xl bg-green-50 border border-green-200">
+                  <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 shrink-0" />
+                  <div className="flex-1">
+                    <p className="font-medium text-slate-900 text-sm">Delivered</p>
+                    <p className="text-xs text-slate-500">{dashboardData.ordersByStatus.delivered} orders completed successfully</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 rounded-xl bg-red-50 border border-red-200">
+                  <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 shrink-0" />
+                  <div className="flex-1">
+                    <p className="font-medium text-slate-900 text-sm">Cancelled</p>
+                    <p className="text-xs text-slate-500">{dashboardData.ordersByStatus.cancelled} orders cancelled</p>
+                  </div>
+                </div>
+              </>
+            )}
+            {!dashboardData && !isLoading && (
+              <p className="text-sm text-muted-foreground text-center py-4">Backend not connected</p>
+            )}
+            {isLoading && (
+              <p className="text-sm text-muted-foreground text-center py-4">Loading system status…</p>
+            )}
+          </div>
+        </Card>
+      </div>
+    </div>
+  );
+}
 
 const monthlyData = [
   { month: 'Jan', orders: 120, revenue: 450000 },
